@@ -1,0 +1,20 @@
+# Railway用のシンプルなDockerfile（バックエンドのみ）
+# フロントエンドは別サービスとしてデプロイする場合に使用
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# バックエンドの依存関係をインストール
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# バックエンドのコードをコピー
+COPY backend/ .
+
+# ポートを公開
+EXPOSE 5000
+
+# アプリケーションを起動
+CMD ["python", "app.py"]
+

@@ -20,7 +20,8 @@ WORKDIR /app/frontend
 
 # フロントエンドの依存関係をインストール
 COPY frontend/package*.json ./
-RUN npm ci
+COPY frontend/package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install; fi
 
 # フロントエンドのコードをコピーしてビルド
 COPY frontend/ .

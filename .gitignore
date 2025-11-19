@@ -1,4 +1,5 @@
-# Python
+# Dependencies
+node_modules/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -6,28 +7,23 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 ENV/
-.venv
-*.egg-info/
+env.bak/
+venv.bak/
+
+# Build outputs
 dist/
 build/
-
-# Node
-node_modules/
 .next/
 out/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+*.egg-info/
 
-# Environment
+# Environment variables
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.production
+.env.development
 
 # IDE
 .vscode/
@@ -40,10 +36,23 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Database
-*.db
-*.sqlite
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Docker
-.dockerignore
+# Testing
+coverage/
+.nyc_output/
+.pytest_cache/
+.mypy_cache/
 
+# Railway
+.railway/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
