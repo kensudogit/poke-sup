@@ -1,12 +1,21 @@
 'use client'
 
-import { Plus, MessageSquare, Activity, Bell } from 'lucide-react'
+import { Plus, MessageSquare, Activity, Bell, LucideIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+
+type ColorType = 'primary' | 'success' | 'warning'
+
+interface QuickAction {
+  icon: LucideIcon
+  label: string
+  onClick: () => void
+  color: ColorType
+}
 
 export default function QuickActions() {
   const router = useRouter()
 
-  const actions = [
+  const actions: QuickAction[] = [
     {
       icon: MessageSquare,
       label: '新規会話',
@@ -27,7 +36,7 @@ export default function QuickActions() {
     },
   ]
 
-  const colorClasses = {
+  const colorClasses: Record<ColorType, string> = {
     primary: 'bg-primary-600 hover:bg-primary-700 text-white',
     success: 'bg-green-600 hover:bg-green-700 text-white',
     warning: 'bg-yellow-600 hover:bg-yellow-700 text-white',
