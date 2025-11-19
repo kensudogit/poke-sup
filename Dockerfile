@@ -37,9 +37,11 @@ COPY --from=backend /app/backend /app/backend
 
 # フロントエンドのビルド成果物をコピー
 COPY --from=frontend /app/frontend/.next /app/frontend/.next
-COPY --from=frontend /app/frontend/public /app/frontend/public
 COPY --from=frontend /app/frontend/package*.json /app/frontend/
 COPY --from=frontend /app/frontend/node_modules /app/frontend/node_modules
+# publicディレクトリが存在する場合のみコピー（オプション）
+# Next.jsではpublicディレクトリはオプションなので、存在しない場合はスキップ
+RUN mkdir -p /app/frontend/public
 
 # 必要なパッケージをインストール
 RUN apt-get update && apt-get install -y \
