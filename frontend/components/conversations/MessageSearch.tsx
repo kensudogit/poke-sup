@@ -5,9 +5,11 @@ import { Search, X } from 'lucide-react'
 
 interface Message {
   id: number
+  user_id: number
   content: string
   created_at: string
-  user?: { name: string }
+  is_read?: boolean
+  user?: { name: string; email: string }
 }
 
 interface MessageSearchProps {
