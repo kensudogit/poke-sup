@@ -84,15 +84,15 @@ export default function ToastContainer() {
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
-      {currentToasts.map((toast) => (
+      {currentToasts.map((toastItem) => (
         <div
-          key={toast.id}
-          className={`${getBgColor(toast.type)} border rounded-lg shadow-lg p-4 min-w-[300px] max-w-md flex items-start gap-3 animate-slide-down`}
+          key={toastItem.id}
+          className={`${getBgColor(toastItem.type)} border rounded-lg shadow-lg p-4 min-w-[300px] max-w-md flex items-start gap-3 animate-slide-down`}
         >
-          {getIcon(toast.type)}
-          <p className="flex-1 text-sm text-gray-900">{toast.message}</p>
+          {getIcon(toastItem.type)}
+          <p className="flex-1 text-sm text-gray-900">{toastItem.message}</p>
           <button
-            onClick={() => toast.remove(toast.id)}
+            onClick={() => toast.remove(toastItem.id)}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="w-4 h-4" />
