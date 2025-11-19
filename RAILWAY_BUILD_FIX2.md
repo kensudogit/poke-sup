@@ -38,3 +38,4 @@ Type error: Element implicitly has an 'any' type because expression of type 'str
 
 型エラーは修正されました。これでRailwayでのビルドが成功するはずです。
 
+

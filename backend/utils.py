@@ -32,3 +32,4 @@ def validate_date(date_string):
     except (ValueError, AttributeError):
         return None
 
+

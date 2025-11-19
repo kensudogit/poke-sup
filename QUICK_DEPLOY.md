@@ -112,3 +112,4 @@ railway run python scripts/init_db.py
 - `NEXT_PUBLIC_API_URL`が正しいか確認
 - バックエンドのURLが正しいか確認
 
+

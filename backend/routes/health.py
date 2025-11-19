@@ -20,3 +20,4 @@ def health_check():
         'service': 'poke-sup-backend'
     }), 200
 
+

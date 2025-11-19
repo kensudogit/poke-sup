@@ -119,3 +119,4 @@ railway run python backend/scripts/init_db.py
 
 詳細な手順は `RAILWAY_DEPLOY_GUIDE.md` を参照してください。
 
+

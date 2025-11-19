@@ -196,3 +196,4 @@ railway logs --service poke-sup-backend
 2. ブラウザのコンソールでエラーを確認
 3. ネットワークタブでAPIリクエストを確認
 
+

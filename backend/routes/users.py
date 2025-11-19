@@ -33,3 +33,4 @@ def get_user(user_id):
     
     return jsonify(user.to_dict()), 200
 
+

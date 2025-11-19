@@ -101,3 +101,4 @@ pytest
 2. `.env.local`の`NEXT_PUBLIC_API_URL`を確認
 3. CORS設定を確認
 
+

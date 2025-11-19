@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env.local
+.env*.local
+backend
+docker-compose.yml
+Dockerfile
+*.md
+!README.md
+.vscode
+.idea
+
+

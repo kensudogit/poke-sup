@@ -76,3 +76,4 @@ docker-compose exec backend python scripts/init_db.py
 3. ブラウザのコンソールでデバッグログを確認
 4. 問題があれば、エラーメッセージを確認して報告
 
+
