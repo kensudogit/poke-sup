@@ -23,7 +23,18 @@ export default function SettingsPage() {
     return null
   }
 
-  const settingsSections = [
+  type ColorType = 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
+
+  interface SettingsSection {
+    title: string
+    description: string
+    icon: typeof User
+    action: () => void
+    color: ColorType
+    disabled?: boolean
+  }
+
+  const settingsSections: SettingsSection[] = [
     {
       title: 'プロフィール',
       description: 'アカウント情報を編集',
@@ -76,7 +87,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {settingsSections.map((section) => {
             const Icon = section.icon
-            const colorClasses = {
+            const colorClasses: Record<ColorType, string> = {
               primary: 'bg-primary-50 text-primary-600',
               secondary: 'bg-secondary-50 text-secondary-600',
               success: 'bg-green-50 text-green-600',
