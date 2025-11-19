@@ -21,16 +21,22 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       isAuthenticated: false,
-      setUser: (user) => set({ user, isAuthenticated: true }),
+      setUser: (user) => {
+        console.log('Setting user:', user)
+        set({ user, isAuthenticated: true })
+      },
       setToken: (token) => {
+        console.log('Setting token')
         localStorage.setItem('access_token', token)
-        set({ accessToken: token })
+        const state = get()
+        set({ accessToken: token, isAuthenticated: !!state.user || !!token })
       },
       logout: () => {
+        console.log('Logging out')
         localStorage.removeItem('access_token')
         set({ user: null, accessToken: null, isAuthenticated: false })
       },
@@ -42,6 +48,13 @@ export const useAuthStore = create<AuthState>()(
         accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        // ストレージから復元された後、トークンがある場合は認証済みとみなす
+        if (state?.accessToken) {
+          console.log('Rehydrated with token, setting authenticated')
+          state.isAuthenticated = true
+        }
+      },
     }
   )
 )

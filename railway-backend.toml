@@ -1,0 +1,11 @@
+# バックエンド用のRailway設定
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+buildCommand = ""
+
+[deploy]
+startCommand = "python app.py"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+

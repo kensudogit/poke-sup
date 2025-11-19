@@ -26,9 +26,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      console.log('Not authenticated, redirecting to login')
       router.push('/')
       return
     }
+    console.log('Authenticated, fetching stats')
     fetchStats()
   }, [isAuthenticated, router])
 

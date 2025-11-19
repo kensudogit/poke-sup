@@ -39,6 +39,8 @@ export default function LoginPage() {
 
     try {
       const endpoint = isRegistering ? '/auth/register' : '/auth/login'
+      console.log('Attempting to login/register:', endpoint)
+      
       const response = await api.post(endpoint, {
         ...data,
         ...(isRegistering && {
@@ -48,12 +50,28 @@ export default function LoginPage() {
         }),
       })
 
-      setToken(response.data.access_token)
-      setUser(response.data.user)
-      toast.success('ログインに成功しました')
-      router.push('/dashboard')
+      console.log('Response received:', response.data)
+      
+      if (response.data.access_token && response.data.user) {
+        // トークンとユーザー情報を設定
+        setToken(response.data.access_token)
+        setUser(response.data.user)
+        
+        console.log('Token and user set, redirecting...')
+        toast.success(isRegistering ? '登録に成功しました' : 'ログインに成功しました')
+        
+        // リダイレクト（少し待ってから）
+        setTimeout(() => {
+          console.log('Navigating to dashboard')
+          router.push('/dashboard')
+          router.refresh() // ページをリフレッシュ
+        }, 200)
+      } else {
+        throw new Error('Invalid response format')
+      }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || 'ログインに失敗しました'
+      console.error('Login error:', err)
+      const errorMessage = err.response?.data?.error || err.message || 'ログインに失敗しました'
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {

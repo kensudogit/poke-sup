@@ -6,6 +6,7 @@ from config import Config
 from extensions import db
 from routes import register_routes
 import eventlet
+import os
 
 eventlet.monkey_patch()
 
@@ -24,5 +25,10 @@ register_routes(app, socketio)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    
+    # Railway用のポート設定
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
+    socketio.run(app, host='0.0.0.0', port=port, debug=debug)
 
