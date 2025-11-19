@@ -8,6 +8,7 @@ interface HealthData {
   data_type: string
   value: number
   unit?: string
+  notes?: string
   recorded_at: string
 }
 
