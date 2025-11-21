@@ -44,9 +44,13 @@
 
 2. **サービス設定**
    - サービス名: `poke-sup-frontend`
-   - Root Directory: `frontend`
-   - Build Command: `npm install && npm run build`
-   - Start Command: `npm start`
+   - **Root Directory: `frontend`** ⚠️ **重要: これを設定しないとNext.jsが検出されません**
+   - Build Command: `npm install && npm run build`（自動検出される場合が多い）
+   - Start Command: `npm start`（自動検出される場合が多い）
+
+   **注意**: Root Directoryを`frontend`に設定することで、Railwayは`frontend/package.json`を正しく認識します。
+   
+   エラー「No Next.js version detected」が発生する場合は、[RAILWAY_FRONTEND_SETUP.md](./RAILWAY_FRONTEND_SETUP.md)を参照してください。
 
 3. **環境変数を設定**
    ```

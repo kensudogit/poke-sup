@@ -1,10 +1,14 @@
 # フロントエンド用のRailway設定
+# 注意: Railwayダッシュボードで Root Directory を "frontend" に設定してください
+
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd frontend && npm install && npm run build"
+# Root Directory が frontend に設定されている場合、以下のコマンドは不要
+# buildCommand = "npm install && npm run build"
 
 [deploy]
-startCommand = "cd frontend && npm start"
+# Root Directory が frontend に設定されている場合、以下のコマンドは不要
+# startCommand = "npm start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 

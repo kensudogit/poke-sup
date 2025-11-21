@@ -124,6 +124,7 @@ curl https://your-app.railway.app/api/health
 
 - [RAILWAY_TROUBLESHOOTING.md](./RAILWAY_TROUBLESHOOTING.md) - 包括的なトラブルシューティングガイド
 - [RAILWAY_FIX_PATH.md](./RAILWAY_FIX_PATH.md) - パス設定の問題と解決方法
+- [RAILWAY_FRONTEND_SETUP.md](./RAILWAY_FRONTEND_SETUP.md) - フロントエンド（Next.js）の設定ガイド
 
 ---
 
