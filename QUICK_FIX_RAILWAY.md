@@ -50,11 +50,38 @@ Railwayダッシュボード → Variables で以下が設定されているか�
 - `DATABASE_URL` (PostgreSQLサービスを追加すると自動設定)
 - `FLASK_ENV=production`
 
-#### 原因4: 起動コマンドが正しくない
+#### 原因4: 起動コマンドのパスが正しくない
+
+**症状:**
+```
+python: can't open file '/app/app.py': [Errno 2] No such file or directory
+```
 
 **確認:**
 - `railway.toml` または Railway設定で `startCommand` が正しいか
 - Dockerfileの `CMD` が正しいか
+- ファイルの実際のパスを確認
+
+**解決:**
+
+**ルートのDockerfileを使用する場合:**
+```toml
+[deploy]
+startCommand = "python backend/app.py"
+```
+
+**backend/Dockerfileを使用する場合（Root Directory: backend）:**
+```toml
+[deploy]
+startCommand = "python app.py"
+```
+
+または、Railwayダッシュボードで：
+1. サービス → Settings → Deploy
+2. Start Command を確認・修正
+3. 保存して再デプロイ
+
+詳細は [RAILWAY_FIX_PATH.md](./RAILWAY_FIX_PATH.md) を参照してください。
 
 ### 3. 構造化ログでデバッグ
 
@@ -95,7 +122,8 @@ curl https://your-app.railway.app/api/health
 
 ## 📚 詳細なトラブルシューティング
 
-より詳細な情報は [RAILWAY_TROUBLESHOOTING.md](./RAILWAY_TROUBLESHOOTING.md) を参照してください。
+- [RAILWAY_TROUBLESHOOTING.md](./RAILWAY_TROUBLESHOOTING.md) - 包括的なトラブルシューティングガイド
+- [RAILWAY_FIX_PATH.md](./RAILWAY_FIX_PATH.md) - パス設定の問題と解決方法
 
 ---
 

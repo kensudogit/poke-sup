@@ -108,18 +108,44 @@ socketio.run(app, host='0.0.0.0', port=port)
 - Railwayダッシュボード → サービス → Variables
 - `PORT` が設定されているか確認（Railwayが自動設定）
 
-#### ステップ3: 起動コマンドを確認
+#### ステップ3: 起動コマンドとパスを確認
 
-**railway.toml または Railway設定:**
+**エラー: `python: can't open file '/app/app.py'` の場合:**
+
+このエラーは、起動コマンドのパスが正しくないことを示しています。
+
+**railway.toml の場合:**
+
+ルートのDockerfileを使用する場合（ファイルは `/app/backend/app.py` にある）:
+```toml
+[deploy]
+startCommand = "python backend/app.py"
+```
+
+backend/Dockerfileを使用する場合（Root Directory: backend、ファイルは `/app/app.py` にある）:
 ```toml
 [deploy]
 startCommand = "python app.py"
 ```
 
 **Dockerfileの場合:**
+
+ルートのDockerfile:
+```dockerfile
+CMD ["python", "backend/app.py"]
+```
+
+backend/Dockerfile:
 ```dockerfile
 CMD ["python", "app.py"]
 ```
+
+**Railwayダッシュボードで確認:**
+1. サービス → Settings → Deploy
+2. Start Command を確認
+3. Root Directory を確認（backend に設定されている場合は `python app.py`、ルートの場合は `python backend/app.py`）
+
+詳細は [RAILWAY_FIX_PATH.md](./RAILWAY_FIX_PATH.md) を参照してください。
 
 #### ステップ4: データベース接続を確認
 
