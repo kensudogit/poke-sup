@@ -399,6 +399,8 @@ docker-compose exec backend python scripts/init_db.py
 - [API ドキュメント](./API_DOCUMENTATION.md)
 - [コントリビューションガイド](./CONTRIBUTING.md)
 - [デプロイメントガイド](./DEPLOY_READY.md)
+- [Railwayトラブルシューティング](./RAILWAY_TROUBLESHOOTING.md) - Railwayデプロイ時のエラー対応
+- [モニタリングガイド](./MONITORING_GUIDE.md) - ログ監視とパフォーマンス追跡
 
 ### ビジネスドキュメント
 - [プレゼンテーション資料](./PRESENTATION.md) - 顧客向けプレゼン資料

@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models import Message, Conversation, User
 from datetime import datetime
+from utils.logging import log_info, log_error, log_warn
 
 messages_bp = Blueprint('messages', __name__)
 
@@ -32,27 +33,37 @@ def create_message():
     content = data.get('content')
     
     if not conversation_id or not content:
+        log_warn("Create message failed - missing fields", userId=user_id, conversation_id=conversation_id)
         return jsonify({'error': 'conversation_id and content are required'}), 400
     
-    conversation = Conversation.query.get(conversation_id)
-    
-    if not conversation:
-        return jsonify({'error': 'Conversation not found'}), 404
-    
-    if conversation.patient_id != user_id and conversation.provider_id != user_id:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    message = Message(
-        conversation_id=conversation_id,
-        user_id=user_id,
-        content=content
-    )
-    
-    db.session.add(message)
-    conversation.updated_at = datetime.utcnow()
-    db.session.commit()
-    
-    return jsonify(message.to_dict()), 201
+    try:
+        conversation = Conversation.query.get(conversation_id)
+        
+        if not conversation:
+            log_warn("Create message failed - conversation not found", userId=user_id, conversation_id=conversation_id)
+            return jsonify({'error': 'Conversation not found'}), 404
+        
+        if conversation.patient_id != user_id and conversation.provider_id != user_id:
+            log_warn("Create message failed - unauthorized", userId=user_id, conversation_id=conversation_id)
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        message = Message(
+            conversation_id=conversation_id,
+            user_id=user_id,
+            content=content
+        )
+        
+        db.session.add(message)
+        conversation.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        log_info("Message created", messageId=message.id, conversationId=conversation_id, userId=user_id, contentLength=len(content))
+        
+        return jsonify(message.to_dict()), 201
+    except Exception as e:
+        log_error("Create message failed", error=e, userId=user_id, conversation_id=conversation_id)
+        db.session.rollback()
+        return jsonify({'error': 'Failed to create message'}), 500
 
 @messages_bp.route('/<int:message_id>', methods=['PUT'])
 @jwt_required()
