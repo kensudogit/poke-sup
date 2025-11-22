@@ -13,14 +13,20 @@ const getApiUrl = () => {
   if (globalThis.window !== undefined) {
     const hostname = globalThis.window.location.hostname
     const port = globalThis.window.location.port
+    const origin = globalThis.window.location.origin
     
-    // ローカル開発環境（localhostまたは127.0.0.1、かつポート3000番台）
-    if ((hostname === 'localhost' || hostname === '127.0.0.1') && (port === '3000' || port === '3002' || port === '')) {
+    // Railway環境やその他の本番環境の検出（localhost以外、またはポートが3000以外）
+    // Railway環境では、hostnameがlocalhost以外になる
+    const isLocalDev = (hostname === 'localhost' || hostname === '127.0.0.1') && 
+                       (port === '3000' || port === '3002')
+    
+    if (isLocalDev) {
+      // ローカル開発環境のみ、localhost:5002を使用
       return 'http://localhost:5002/api'
     }
     
     // Railway環境やその他の本番環境では、現在のオリジンを使用
-    return `${globalThis.window.location.origin}/api`
+    return `${origin}/api`
   }
   
   // サーバーサイドレンダリング時はデフォルト値を使用
@@ -37,10 +43,14 @@ const api = axios.create({
   },
 })
 
-// デバッグ用: baseURLをログ出力
-if (process.env.NODE_ENV === 'development') {
-  console.log('API baseURL:', baseURL)
-}
+// デバッグ用: baseURLをログ出力（常に出力）
+console.log('API baseURL initialized:', baseURL, {
+  hostname: globalThis.window?.location.hostname,
+  port: globalThis.window?.location.port,
+  origin: globalThis.window?.location.origin,
+  env: process.env.NODE_ENV,
+  nextPublicApiUrl: process.env.NEXT_PUBLIC_API_URL,
+})
 
 // Add token to requests
 api.interceptors.request.use((config) => {
@@ -110,6 +120,20 @@ let redirectTimeout: NodeJS.Timeout | null = null
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // 接続エラーの処理
+    if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+      console.error('Network connection error:', {
+        code: error.code,
+        message: error.message,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        fullURL: error.config?.baseURL + error.config?.url,
+      })
+      
+      // 接続エラーの場合は、エラーをそのまま返す（リダイレクトはしない）
+      return Promise.reject(error)
+    }
+    
     if (error.response?.status === 401) {
       // リダイレクトの重複を防ぐ（グローバルフラグを使用）
       if (!isRedirecting && globalThis.window !== undefined) {
