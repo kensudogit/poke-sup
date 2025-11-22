@@ -49,14 +49,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 rounded-full overflow-hidden shadow-md ring-2 ring-white animate-sway">
             <Image
-              src="/logo.png"
+              src="/utsubo_image1.png"
               alt="ポケさぽロゴ"
               width={32}
               height={32}
               className="object-cover w-full h-full"
             />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">ポケさぽ</h1>
         </div>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -78,16 +77,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex items-center gap-3">
                 <div className="relative w-10 h-10 rounded-full overflow-hidden shadow-md ring-2 ring-white animate-sway">
                   <Image
-                    src="/logo.png"
+                    src="/utsubo_image1.png"
                     alt="ポケさぽロゴ"
                     width={40}
                     height={40}
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                  ポケさぽ
-                </h2>
               </div>
             </div>
 

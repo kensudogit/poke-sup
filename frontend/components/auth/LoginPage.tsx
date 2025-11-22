@@ -166,7 +166,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center mb-4 relative">
               <div className="relative w-32 h-32 rounded-full overflow-hidden shadow-lg ring-4 ring-white animate-sway">
                 <Image
-                  src="/logo.png"
+                  src="/utsubo_image1.png"
                   alt="ポケさぽロゴ"
                   width={128}
                   height={128}
@@ -175,7 +175,6 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">ポケさぽ</h1>
             <p className="text-gray-600">患者と医療従事者のコミュニケーションプラットフォーム</p>
           </div>
 
