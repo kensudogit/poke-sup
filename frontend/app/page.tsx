@@ -17,13 +17,21 @@ export default function Home() {
       return
     }
     
-    console.log('Home page - isAuthenticated:', isAuthenticated, 'user:', user, 'token:', accessToken)
+    // トークンを確認（localStorageとstateの両方）
+    const localStorageToken = localStorage.getItem('access_token')
+    const finalToken = accessToken || localStorageToken
     
-    // 認証済みでユーザー情報がある場合のみリダイレクト
-    if (isAuthenticated && user && accessToken) {
+    console.log('Home page - isAuthenticated:', isAuthenticated, 'user:', user, 'token:', finalToken ? 'present' : 'missing')
+    
+    // 認証済みでユーザー情報とトークンがある場合のみリダイレクト
+    if (isAuthenticated && user && finalToken) {
       console.log('Already authenticated, redirecting to dashboard')
       hasRedirected.current = true
       router.push('/dashboard')
+    } else if (isAuthenticated && user && !finalToken) {
+      // トークンが失われている場合は、認証状態をリセット
+      console.warn('Token missing despite authentication, resetting auth state')
+      useAuthStore.getState().logout()
     }
     // pathnameとrouterを依存配列から除外（安定しているため）
     // eslint-disable-next-line react-hooks/exhaustive-deps

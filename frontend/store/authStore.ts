@@ -74,14 +74,23 @@ export const useAuthStore = create<AuthState>()(
           return
         }
         
-        // トークンの同期のみ（状態の更新は行わない）
+        // トークンの同期
         const token = localStorage.getItem('access_token')
+        
+        // stateにトークンがあるが、localStorageにない場合は同期
         if (state.accessToken && !token) {
           try {
             localStorage.setItem('access_token', state.accessToken)
+            console.log('Token synced from state to localStorage during rehydration')
           } catch (error) {
             console.error('Failed to save token to localStorage during rehydration:', error)
           }
+        }
+        
+        // localStorageにトークンがあるが、stateにない場合は同期
+        if (token && !state.accessToken) {
+          console.log('Token found in localStorage but not in state, syncing...')
+          // 状態を更新しない（無限ループを防ぐため、次のレンダリングで反映される）
         }
         
         // 状態の更新は行わない（無限ループを防ぐ）

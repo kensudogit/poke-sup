@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
@@ -24,17 +24,37 @@ export default function DashboardPage() {
   })
   const [loading, setLoading] = useState(true)
 
+  const hasCheckedAuth = useRef(false)
+
   useEffect(() => {
+    // 既にチェック済みの場合はスキップ（無限ループを防ぐ）
+    if (hasCheckedAuth.current) {
+      return
+    }
+    
     // 認証状態とトークンの両方を確認
     const token = localStorage.getItem('access_token')
-    if (!isAuthenticated || !user || !token) {
-      console.log('Not authenticated, redirecting to login', { isAuthenticated, hasUser: !!user, hasToken: !!token })
+    const stateToken = useAuthStore.getState().accessToken
+    const finalToken = token || stateToken
+    
+    if (!isAuthenticated || !user || !finalToken) {
+      console.log('Not authenticated, redirecting to login', { 
+        isAuthenticated, 
+        hasUser: !!user, 
+        hasToken: !!finalToken,
+        hasLocalStorageToken: !!token,
+        hasStateToken: !!stateToken
+      })
+      hasCheckedAuth.current = true
       router.push('/')
       return
     }
+    
+    hasCheckedAuth.current = true
     console.log('Authenticated, fetching stats')
     fetchStats()
-  }, [isAuthenticated, user, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user])
 
   const fetchStats = async () => {
     try {

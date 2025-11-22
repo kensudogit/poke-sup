@@ -99,21 +99,29 @@ export default function LoginPage() {
           userId: response.data.user.id,
         })
         
+        // トークンを先に設定（確実に保存）
         setToken(token)
-        // トークンが確実に保存されたことを確認
-        const savedToken = localStorage.getItem('access_token')
-        if (savedToken !== token) {
-          console.warn('Token mismatch after setting, retrying...')
+        
+        // トークンが確実に保存されたことを確認（複数回試行）
+        let savedToken = localStorage.getItem('access_token')
+        let retryCount = 0
+        while (savedToken !== token && retryCount < 3) {
+          console.warn(`Token mismatch after setting (attempt ${retryCount + 1}), retrying...`)
           localStorage.setItem('access_token', token)
+          savedToken = localStorage.getItem('access_token')
+          retryCount++
         }
         
+        // ユーザー情報を設定（トークンが保存された後）
         setUser(response.data.user)
         
         // 最終確認
-        const finalToken = localStorage.getItem('access_token')
-        console.log('Token and user set', {
-          tokenInLocalStorage: !!finalToken,
-          tokenMatches: finalToken === token,
+        const verifiedToken = localStorage.getItem('access_token')
+        const stateToken = useAuthStore.getState().accessToken
+        console.log('Final token check:', {
+          localStorageToken: !!verifiedToken,
+          stateToken: !!stateToken,
+          tokensMatch: verifiedToken === token && stateToken === token,
           userSet: !!response.data.user,
         })
         
