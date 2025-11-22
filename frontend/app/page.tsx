@@ -3,16 +3,23 @@
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import LoginPage from '@/components/auth/LoginPage'
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 
 export default function Home() {
   const router = useRouter()
   const hasRedirected = useRef(false)
+  const mounted = useRef(false)
 
-  // 認証状態をチェック（レンダリング中に直接チェック）
-  if (globalThis.window !== undefined && !hasRedirected.current) {
+  useEffect(() => {
+    // マウント時のみ実行（無限ループを防ぐ）
+    if (mounted.current || hasRedirected.current) {
+      return
+    }
+    mounted.current = true
+    
+    // 認証状態をチェック
     const state = useAuthStore.getState()
-    const localStorageToken = localStorage.getItem('access_token')
+    const localStorageToken = globalThis.window !== undefined ? localStorage.getItem('access_token') : null
     const finalToken = state.accessToken || localStorageToken
     const finalUser = state.user
     const finalIsAuth = state.isAuthenticated
@@ -21,12 +28,11 @@ export default function Home() {
     if (finalIsAuth && finalUser && finalToken) {
       console.log('Already authenticated, redirecting to dashboard')
       hasRedirected.current = true
-      // 次のティックでリダイレクト（レンダリング中に直接pushしない）
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 0)
+      router.push('/dashboard')
     }
-  }
+    // 依存配列を空にして、マウント時のみ実行
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 認証済みの場合は何も表示しない（リダイレクト中）
   const state = useAuthStore.getState()

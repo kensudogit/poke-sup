@@ -10,9 +10,9 @@ const getApiUrl = () => {
   }
   
   // ブラウザ環境での判定
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname
-    const port = window.location.port
+  if (globalThis.window !== undefined) {
+    const hostname = globalThis.window.location.hostname
+    const port = globalThis.window.location.port
     
     // ローカル開発環境（localhostまたは127.0.0.1、かつポート3000番台）
     if ((hostname === 'localhost' || hostname === '127.0.0.1') && (port === '3000' || port === '3002' || port === '')) {
@@ -20,7 +20,7 @@ const getApiUrl = () => {
     }
     
     // Railway環境やその他の本番環境では、現在のオリジンを使用
-    return `${window.location.origin}/api`
+    return `${globalThis.window.location.origin}/api`
   }
   
   // サーバーサイドレンダリング時はデフォルト値を使用
@@ -31,9 +31,9 @@ const getApiUrl = () => {
 let baseURL = '/api'
 
 // ブラウザ環境でローカル開発環境を検出
-if (typeof window !== 'undefined') {
-  const hostname = window.location.hostname
-  const port = window.location.port
+if (globalThis.window !== undefined) {
+  const hostname = globalThis.window.location.hostname
+  const port = globalThis.window.location.port
   
   // ローカル開発環境の場合のみ絶対URLを使用
   if ((hostname === 'localhost' || hostname === '127.0.0.1') && (port === '3000' || port === '3002' || port === '')) {
@@ -109,12 +109,52 @@ api.interceptors.request.use((config) => {
 })
 
 // Handle token expiration
+// グローバルフラグでリダイレクトの重複を防ぐ
+let isRedirecting = false
+let redirectTimeout: NodeJS.Timeout | null = null
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token')
-      window.location.href = '/'
+      // リダイレクトの重複を防ぐ（グローバルフラグを使用）
+      if (!isRedirecting && globalThis.window !== undefined) {
+        isRedirecting = true
+        
+        // 既存のタイムアウトをクリア
+        if (redirectTimeout) {
+          clearTimeout(redirectTimeout)
+        }
+        
+        // トークンと認証状態をクリア
+        try {
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('auth-storage')
+        } catch (e) {
+          console.warn('Failed to clear localStorage:', e)
+        }
+        
+        // Zustandの状態もクリア
+        try {
+          const { useAuthStore } = require('@/store/authStore')
+          useAuthStore.getState().logout()
+        } catch (e) {
+          console.warn('Failed to clear auth store:', e)
+        }
+        
+        // リダイレクト（少し待ってから実行、重複を防ぐ）
+        redirectTimeout = setTimeout(() => {
+          if (globalThis.window.location.pathname !== '/') {
+            console.log('Redirecting to login due to 401 error')
+            globalThis.window.location.href = '/'
+          }
+          // リダイレクトフラグをリセット（10秒後、十分な時間を確保）
+          setTimeout(() => {
+            isRedirecting = false
+            redirectTimeout = null
+          }, 10000)
+        }, 200)
+      }
     }
     return Promise.reject(error)
   }

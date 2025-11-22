@@ -29,6 +29,17 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
+      // 認証状態を再確認（APIリクエスト前に）
+      const token = localStorage.getItem('access_token')
+      const state = useAuthStore.getState()
+      const finalToken = state.accessToken || token
+      
+      if (!finalToken) {
+        console.warn('No token found, skipping stats fetch')
+        setLoading(false)
+        return
+      }
+      
       const [conversationsRes, healthDataRes, remindersRes] = await Promise.all([
         api.get('/conversations'),
         api.get('/health-data'),
@@ -43,8 +54,12 @@ export default function DashboardPage() {
           (r: any) => new Date(r.scheduled_at) >= new Date()
         ).length,
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch stats:', error)
+      // 401エラーの場合は、リダイレクトはapi.tsのインターセプターで処理される
+      if (error.response?.status === 401) {
+        console.log('401 error in fetchStats, redirect will be handled by interceptor')
+      }
     } finally {
       setLoading(false)
     }
@@ -70,7 +85,18 @@ export default function DashboardPage() {
         hasUser: !!finalUser, 
         hasToken: !!finalToken
       })
-      router.push('/')
+      // 状態をクリアしてからリダイレクト
+      try {
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('auth-storage')
+        useAuthStore.getState().logout()
+      } catch (e) {
+        console.warn('Failed to clear auth state:', e)
+      }
+      // リダイレクト（少し待ってから実行）
+      setTimeout(() => {
+        router.push('/')
+      }, 100)
       return
     }
     
