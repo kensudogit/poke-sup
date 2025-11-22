@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
-import { Heart, Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react'
 import { toast } from '@/components/common/Toast'
 
 const loginSchema = z.object({
@@ -57,6 +57,7 @@ export default function LoginPage() {
   }
 
   const onSubmit = async (data: LoginForm) => {
+    console.log('Form submitted with data:', { email: data.email, passwordLength: data.password?.length })
     setError(null)
     setLoading(true)
 
@@ -175,7 +176,24 @@ export default function LoginPage() {
             <p className="text-gray-600 text-xs sm:text-sm leading-tight">患者と医療従事者のコミュニケーションプラットフォーム</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            onSubmit={handleSubmit(
+              (data) => {
+                console.log('Form validation passed, submitting:', { email: data.email, passwordLength: data.password?.length })
+                onSubmit(data)
+              },
+              (errors) => {
+                console.log('Form validation failed:', errors)
+                const firstError = Object.values(errors)[0]
+                if (firstError?.message) {
+                  setError(String(firstError.message))
+                } else {
+                  setError('入力内容を確認してください')
+                }
+              }
+            )} 
+            className="space-y-6"
+          >
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Mail className="inline w-4 h-4 mr-2" />
