@@ -30,9 +30,31 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
+    setValue,
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    mode: 'onChange',
   })
+
+  // デバッグ用: パスワードの値を監視
+  const passwordValue = watch('password')
+  
+  // パスワード入力の直接制御
+  const passwordRegister = register('password', {
+    required: 'パスワードは必須です',
+    minLength: {
+      value: 6,
+      message: 'パスワードは6文字以上で入力してください',
+    },
+  })
+  
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    passwordRegister.onChange(e) // react-hook-formのonChangeを呼び出す
+    setValue('password', value, { shouldValidate: true, shouldDirty: true })
+    console.log('Password changed:', value.length, 'characters')
+  }
 
   const onSubmit = async (data: LoginForm) => {
     setError(null)
@@ -40,16 +62,30 @@ export default function LoginPage() {
 
     try {
       const endpoint = isRegistering ? '/auth/register' : '/auth/login'
-      console.log('Attempting to login/register:', endpoint)
+      console.log('Attempting to login/register:', endpoint, {
+        email: data.email,
+        passwordLength: data.password?.length || 0,
+        isRegistering,
+      })
       
-      const response = await api.post(endpoint, {
-        ...data,
+      // パスワードが空でないことを確認
+      if (!data.password || data.password.length < 6) {
+        throw new Error('パスワードは6文字以上で入力してください')
+      }
+      
+      const requestData = {
+        email: data.email,
+        password: data.password,
         ...(isRegistering && {
           name: data.email.split('@')[0],
           role: 'patient',
           language: 'ja',
         }),
-      })
+      }
+      
+      console.log('Sending request data:', { ...requestData, password: '***' })
+      
+      const response = await api.post(endpoint, requestData)
 
       console.log('Response received:', response.data)
       
@@ -72,7 +108,20 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login error:', err)
-      const errorMessage = err.response?.data?.error || err.message || 'ログインに失敗しました'
+      let errorMessage = 'ログインに失敗しました'
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error
+      } else if (err.message) {
+        errorMessage = err.message
+      } else if (err.response?.status === 400) {
+        errorMessage = '入力内容に誤りがあります'
+      } else if (err.response?.status === 401) {
+        errorMessage = 'メールアドレスまたはパスワードが正しくありません'
+      } else if (err.response?.status === 500) {
+        errorMessage = 'サーバーエラーが発生しました。しばらく待ってから再度お試しください'
+      }
+      
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -118,40 +167,49 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   id="password-input"
-                  {...register('password', {
-                    required: true,
-                    minLength: 6,
-                  })}
+                  {...passwordRegister}
                   type={showPassword ? 'text' : 'password'}
                   autoComplete={isRegistering ? 'new-password' : 'current-password'}
                   disabled={loading}
-                  readOnly={false}
+                  onChange={handlePasswordChange}
                   className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed bg-white"
                   placeholder={isRegistering ? '6文字以上で入力してください' : '••••••••'}
                 />
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    setShowPassword(!showPassword)
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors z-10 p-1 cursor-pointer"
-                  aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
-                  tabIndex={-1}
+                <div
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 pointer-events-none"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5 pointer-events-none" />
-                  ) : (
-                    <Eye className="w-5 h-5 pointer-events-none" />
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setShowPassword((prev) => !prev)
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    className="text-gray-500 hover:text-gray-700 focus:outline-none transition-colors cursor-pointer bg-transparent border-0 p-0 pointer-events-auto"
+                    aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
               </div>
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
               )}
               {isRegistering && (
                 <p className="mt-1 text-xs text-gray-500">パスワードは6文字以上で入力してください</p>
+              )}
+              {/* デバッグ用: 開発環境でのみ表示 */}
+              {process.env.NODE_ENV === 'development' && passwordValue && (
+                <p className="mt-1 text-xs text-gray-400">入力文字数: {passwordValue.length}</p>
               )}
             </div>
 
