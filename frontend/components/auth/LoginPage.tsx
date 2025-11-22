@@ -123,7 +123,6 @@ export default function LoginPage() {
         setTimeout(() => {
           console.log('Navigating to dashboard')
           router.push('/dashboard')
-          router.refresh() // ページをリフレッシュ
         }, 200)
       } else {
         throw new Error('Invalid response format')

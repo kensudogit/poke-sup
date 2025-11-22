@@ -72,59 +72,38 @@ export const useAuthStore = create<AuthState>()(
         // ストレージから復元された後、トークンがある場合は認証済みとみなす
         if (!state) {
           console.warn('State is undefined during rehydration')
-          return { user: null, accessToken: null, isAuthenticated: false }
+          return
         }
         
         const token = localStorage.getItem('access_token')
         console.log('Rehydrating storage', {
           hasStateToken: !!state.accessToken,
           hasLocalStorageToken: !!token,
-          stateToken: state.accessToken?.substring(0, 20),
-          localStorageToken: token?.substring(0, 20),
         })
         
         // トークンの同期: localStorageとstateの両方を確認
-        let finalToken = state.accessToken || token
-        let finalIsAuthenticated = false
-        
-        // 状態が変更されていない場合は、何も返さない（無限ループを防ぐ）
-        if (!finalToken && !state.isAuthenticated) {
-          return
+        // stateにトークンがあるが、localStorageにない場合は同期
+        if (state.accessToken && !token) {
+          console.log('Syncing token from state to localStorage')
+          try {
+            localStorage.setItem('access_token', state.accessToken)
+          } catch (error) {
+            console.error('Failed to save token to localStorage during rehydration:', error)
+          }
         }
         
-        if (finalToken) {
-          // localStorageにトークンがあるが、stateにない場合は同期
-          if (token && !state.accessToken) {
-            console.log('Syncing token from localStorage to state')
-            finalToken = token
-          }
-          
-          // stateにトークンがあるが、localStorageにない場合は同期
-          if (state.accessToken && !token) {
-            console.log('Syncing token from state to localStorage')
-            try {
-              localStorage.setItem('access_token', state.accessToken)
-              finalToken = state.accessToken
-            } catch (error) {
-              console.error('Failed to save token to localStorage during rehydration:', error)
-            }
-          }
-          
-          // トークンとユーザーの両方が存在する場合のみ認証済みとみなす
-          finalIsAuthenticated = !!(finalToken && state.user)
-          console.log('Rehydrated with token, setting authenticated', { 
-            hasToken: !!finalToken, 
+        // トークンとユーザーの両方が存在する場合のみ認証済みとみなす
+        const finalIsAuthenticated = !!(state.accessToken && state.user)
+        
+        // 状態が実際に変更された場合のみ更新を返す（無限ループを防ぐ）
+        if (state.isAuthenticated !== finalIsAuthenticated) {
+          console.log('Updating isAuthenticated during rehydration', { 
+            hasToken: !!state.accessToken, 
             hasUser: !!state.user, 
             isAuthenticated: finalIsAuthenticated 
           })
-          
-          // 状態が実際に変更された場合のみ更新を返す
-          if (state.accessToken !== finalToken || state.isAuthenticated !== finalIsAuthenticated) {
-            return {
-              ...state,
-              accessToken: finalToken,
-              isAuthenticated: finalIsAuthenticated,
-            }
+          return {
+            isAuthenticated: finalIsAuthenticated,
           }
         }
       },
