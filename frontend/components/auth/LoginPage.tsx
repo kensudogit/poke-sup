@@ -57,7 +57,11 @@ export default function LoginPage() {
   }
 
   const onSubmit = async (data: LoginForm) => {
-    console.log('Form submitted with data:', { email: data.email, passwordLength: data.password?.length })
+    console.log('Form submitted with data:', { 
+      email: data.email, 
+      passwordLength: data.password?.length,
+      isRegistering,
+    })
     setError(null)
     setLoading(true)
 
@@ -67,6 +71,7 @@ export default function LoginPage() {
         email: data.email,
         passwordLength: data.password?.length || 0,
         isRegistering,
+        mode: isRegistering ? 'REGISTER' : 'LOGIN',
       })
       
       // パスワードが空でないことを確認
@@ -88,6 +93,11 @@ export default function LoginPage() {
       
       console.log('API baseURL:', api.defaults.baseURL)
       console.log('Full URL:', `${api.defaults.baseURL}${endpoint}`)
+      console.log('Request will be sent to:', {
+        method: 'POST',
+        url: `${api.defaults.baseURL}${endpoint}`,
+        data: { ...requestData, password: '***' },
+      })
       
       const response = await api.post(endpoint, requestData)
 
@@ -159,7 +169,19 @@ export default function LoginPage() {
       let errorMessage = isRegistering ? '新規登録に失敗しました' : 'ログインに失敗しました'
       
       if (err.response?.data?.error) {
-        errorMessage = err.response.data.error
+        const serverError = err.response.data.error
+        // エラーメッセージを日本語に翻訳
+        if (serverError === 'User already exists') {
+          errorMessage = 'このメールアドレスは既に登録されています。ログインしてください。'
+        } else if (serverError === 'Invalid credentials') {
+          errorMessage = 'メールアドレスまたはパスワードが正しくありません'
+        } else if (serverError === 'Email and password are required') {
+          errorMessage = 'メールアドレスとパスワードを入力してください'
+        } else if (serverError === 'Password must be at least 6 characters long') {
+          errorMessage = 'パスワードは6文字以上で入力してください'
+        } else {
+          errorMessage = serverError
+        }
       } else if (err.message) {
         errorMessage = err.message
       } else if (err.response?.status === 400) {
@@ -172,10 +194,19 @@ export default function LoginPage() {
         console.error('Server error details:', serverError)
       } else if (!err.response) {
         // ネットワークエラーまたはCORSエラーの可能性
-        if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
-          errorMessage = 'サーバーに接続できません。サーバーが起動しているか確認してください'
+        console.error('Network error details:', {
+          code: err.code,
+          message: err.message,
+          name: err.name,
+          stack: err.stack,
+        })
+        
+        if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+          errorMessage = 'サーバーに接続できません。しばらく待ってから再度お試しください'
         } else if (err.message?.includes('CORS')) {
           errorMessage = 'CORSエラーが発生しました。サーバーの設定を確認してください'
+        } else if (err.message?.includes('timeout')) {
+          errorMessage = 'リクエストがタイムアウトしました。しばらく待ってから再度お試しください'
         } else {
           errorMessage = `ネットワークエラー: ${err.message || '接続を確認してください'}`
         }
