@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
@@ -28,17 +28,8 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [healthData, setHealthData] = useState<HealthData[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/')
-      return
-    }
-    fetchData()
-  }, [isAuthenticated, router, currentDate])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const startDate = startOfMonth(currentDate)
       const endDate = endOfMonth(currentDate)
@@ -62,10 +53,16 @@ export default function CalendarPage() {
       setHealthData(healthDataRes.data || [])
     } catch (error) {
       console.error('Failed to fetch data:', error)
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [currentDate])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/')
+      return
+    }
+    fetchData()
+  }, [isAuthenticated, router, fetchData])
 
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
