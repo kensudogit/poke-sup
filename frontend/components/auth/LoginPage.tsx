@@ -83,13 +83,23 @@ export default function LoginPage() {
         email: data.email,
         password: data.password,
         ...(isRegistering && {
-          name: data.email.split('@')[0],
+          name: data.email.split('@')[0] || 'User',
           role: 'patient',
           language: 'ja',
         }),
       }
       
-      console.log('Sending request data:', { ...requestData, password: '***' })
+      console.log('Sending request data:', { 
+        ...requestData, 
+        password: '***',
+        hasEmail: !!requestData.email,
+        hasPassword: !!requestData.password,
+        passwordLength: requestData.password?.length,
+        isRegistering,
+        name: requestData.name,
+        role: requestData.role,
+        language: requestData.language,
+      })
       
       console.log('API baseURL:', api.defaults.baseURL)
       console.log('Full URL:', `${api.defaults.baseURL}${endpoint}`)
@@ -184,7 +194,18 @@ export default function LoginPage() {
         url: err.config?.url,
         baseURL: err.config?.baseURL,
         fullURL: err.config?.baseURL + err.config?.url,
+        requestData: err.config?.data,
+        headers: err.config?.headers,
       })
+      
+      // 400エラーの場合は、レスポンスデータの詳細を表示
+      if (err.response?.status === 400) {
+        console.error('400 Bad Request details:', {
+          error: err.response.data?.error,
+          data: err.response.data,
+          requestData: err.config?.data ? JSON.parse(err.config.data) : null,
+        })
+      }
       
       let errorMessage = isRegistering ? '新規登録に失敗しました' : 'ログインに失敗しました'
       

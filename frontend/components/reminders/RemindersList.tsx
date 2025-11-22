@@ -24,7 +24,46 @@ export default function RemindersList() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    fetchReminders()
+    // トークンが確実に保存されるまで少し待ってからフェッチ
+    const checkAndFetch = async () => {
+      // トークンを確認（複数回試行）
+      let token = localStorage.getItem('access_token')
+      if (!token) {
+        // Zustandのストレージからも確認
+        try {
+          const authStorage = localStorage.getItem('auth-storage')
+          if (authStorage) {
+            const parsed = JSON.parse(authStorage)
+            token = parsed?.state?.accessToken
+            if (token && typeof token === 'string') {
+              localStorage.setItem('access_token', token)
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse auth-storage:', e)
+        }
+      }
+      
+      if (!token) {
+        // トークンが見つからない場合、少し待ってから再試行
+        setTimeout(() => {
+          const retryToken = localStorage.getItem('access_token')
+          if (retryToken) {
+            fetchReminders()
+          } else {
+            console.warn('No token found for RemindersList, skipping fetch')
+            setLoading(false)
+          }
+        }, 500)
+      } else {
+        // トークンが見つかった場合、少し待ってからフェッチ（確実に保存されるまで）
+        setTimeout(() => {
+          fetchReminders()
+        }, 300)
+      }
+    }
+    
+    checkAndFetch()
   }, [])
 
   useEffect(() => {

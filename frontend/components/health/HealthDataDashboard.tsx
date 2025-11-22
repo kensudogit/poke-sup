@@ -49,8 +49,57 @@ export default function HealthDataDashboard() {
   const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>('line')
   const itemsPerPage = 10
 
+  const hasInitialFetch = { current: false }
+  
   useEffect(() => {
-    fetchHealthData()
+    // 初回のみトークンチェックを行う
+    if (!hasInitialFetch.current) {
+      hasInitialFetch.current = true
+      
+      // トークンが確実に保存されるまで少し待ってからフェッチ
+      const checkAndFetch = async () => {
+        // トークンを確認（複数回試行）
+        let token = localStorage.getItem('access_token')
+        if (!token) {
+          // Zustandのストレージからも確認
+          try {
+            const authStorage = localStorage.getItem('auth-storage')
+            if (authStorage) {
+              const parsed = JSON.parse(authStorage)
+              token = parsed?.state?.accessToken
+              if (token && typeof token === 'string') {
+                localStorage.setItem('access_token', token)
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to parse auth-storage:', e)
+          }
+        }
+        
+        if (!token) {
+          // トークンが見つからない場合、少し待ってから再試行
+          setTimeout(() => {
+            const retryToken = localStorage.getItem('access_token')
+            if (retryToken) {
+              fetchHealthData()
+            } else {
+              console.warn('No token found for HealthDataDashboard, skipping fetch')
+              setLoading(false)
+            }
+          }, 500)
+        } else {
+          // トークンが見つかった場合、少し待ってからフェッチ（確実に保存されるまで）
+          setTimeout(() => {
+            fetchHealthData()
+          }, 300)
+        }
+      }
+      
+      checkAndFetch()
+    } else {
+      // 2回目以降は通常通りフェッチ
+      fetchHealthData()
+    }
   }, [selectedType])
 
   useEffect(() => {
