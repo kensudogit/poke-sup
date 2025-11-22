@@ -108,18 +108,25 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login error:', err)
-      let errorMessage = 'ログインに失敗しました'
+      console.error('Error response:', err.response?.data)
+      console.error('Error status:', err.response?.status)
+      
+      let errorMessage = isRegistering ? '新規登録に失敗しました' : 'ログインに失敗しました'
       
       if (err.response?.data?.error) {
         errorMessage = err.response.data.error
       } else if (err.message) {
         errorMessage = err.message
       } else if (err.response?.status === 400) {
-        errorMessage = '入力内容に誤りがあります'
+        errorMessage = '入力内容に誤りがあります。メールアドレスとパスワード（6文字以上）を確認してください'
       } else if (err.response?.status === 401) {
         errorMessage = 'メールアドレスまたはパスワードが正しくありません'
       } else if (err.response?.status === 500) {
-        errorMessage = 'サーバーエラーが発生しました。しばらく待ってから再度お試しください'
+        const serverError = err.response?.data?.error || 'サーバーエラー'
+        errorMessage = `サーバーエラー: ${serverError}`
+        console.error('Server error details:', serverError)
+      } else if (!err.response) {
+        errorMessage = 'ネットワークエラーが発生しました。接続を確認してください'
       }
       
       setError(errorMessage)
