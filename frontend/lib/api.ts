@@ -178,6 +178,18 @@ api.interceptors.response.use(
     }
     
     if (error.response?.status === 401) {
+      // ログイン/登録エンドポイントでの401エラーは、認証情報が間違っているだけなので
+      // ログアウト処理を実行しない
+      const url = error.config?.url || ''
+      const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register')
+      
+      if (isAuthEndpoint) {
+        // ログイン/登録エンドポイントでの401エラーは、そのまま返す（ログアウトしない）
+        console.log('401 error on auth endpoint, not logging out')
+        return Promise.reject(error)
+      }
+      
+      // その他のエンドポイントでの401エラーは、認証が無効になったのでログアウト処理を実行
       // リダイレクトの重複を防ぐ（グローバルフラグを使用）
       if (!isRedirecting && globalThis.window !== undefined) {
         isRedirecting = true
