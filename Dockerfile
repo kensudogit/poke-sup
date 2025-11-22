@@ -66,29 +66,57 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
 # フロントエンドをバックグラウンドで起動\n\
+echo "==========================================="\n\
 echo "Starting frontend..."\n\
+echo "==========================================="\n\
 cd /app/frontend\n\
+\n\
+# フロントエンドの起動ログを出力\n\
 PORT=3000 npm start > /tmp/frontend.log 2>&1 &\n\
 FRONTEND_PID=$!\n\
 echo "Frontend started with PID: $FRONTEND_PID"\n\
+echo "Frontend log file: /tmp/frontend.log"\n\
 \n\
-# フロントエンドの起動を待つ（最大30秒）\n\
+# 少し待ってからログを確認\n\
+sleep 3\n\
+echo "Initial frontend logs:"\n\
+tail -20 /tmp/frontend.log || true\n\
+\n\
+# フロントエンドの起動を待つ（最大60秒）\n\
+echo "==========================================="\n\
 echo "Waiting for frontend to be ready..."\n\
-for i in {1..30}; do\n\
-  if curl -s http://localhost:3000 > /dev/null 2>&1; then\n\
-    echo "Frontend is ready!"\n\
+echo "==========================================="\n\
+FRONTEND_READY=false\n\
+for i in {1..60}; do\n\
+  if curl -s -f http://localhost:3000 > /dev/null 2>&1; then\n\
+    echo "✓ Frontend is ready! (after ${i} seconds)"\n\
+    FRONTEND_READY=true\n\
     break\n\
   fi\n\
-  if [ $i -eq 30 ]; then\n\
-    echo "Warning: Frontend did not start within 30 seconds"\n\
-    echo "Frontend logs:"\n\
-    tail -20 /tmp/frontend.log || true\n\
+  if [ $((i % 5)) -eq 0 ]; then\n\
+    echo "Still waiting... (${i}/60 seconds)"\n\
+    echo "Recent frontend logs:"\n\
+    tail -10 /tmp/frontend.log || true\n\
   fi\n\
   sleep 1\n\
 done\n\
 \n\
+if [ "$FRONTEND_READY" = "false" ]; then\n\
+  echo "==========================================="\n\
+  echo "WARNING: Frontend did not start within 60 seconds"\n\
+  echo "==========================================="\n\
+  echo "Frontend logs:"\n\
+  cat /tmp/frontend.log || true\n\
+  echo "==========================================="\n\
+  echo "Checking if frontend process is running..."\n\
+  ps aux | grep -E "node|npm" | grep -v grep || true\n\
+  echo "==========================================="\n\
+fi\n\
+\n\
 # バックエンドを起動（フォアグラウンド）\n\
+echo "==========================================="\n\
 echo "Starting backend..."\n\
+echo "==========================================="\n\
 cd /app/backend\n\
 python app.py\n\
 ' > /app/start.sh && chmod +x /app/start.sh

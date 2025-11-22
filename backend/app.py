@@ -37,7 +37,7 @@ def proxy_to_frontend(path):
         if request.query_string:
             frontend_url += '?' + request.query_string.decode('utf-8')
         
-        # リクエストを転送
+        # リクエストを転送（タイムアウトを延長）
         resp = requests.request(
             method=request.method,
             url=frontend_url,
@@ -45,7 +45,7 @@ def proxy_to_frontend(path):
             data=request.get_data(),
             cookies=request.cookies,
             allow_redirects=False,
-            timeout=10
+            timeout=30  # タイムアウトを30秒に延長
         )
         
         # レスポンスを返す
@@ -54,8 +54,8 @@ def proxy_to_frontend(path):
                    if name.lower() not in excluded_headers]
         
         return Response(resp.content, resp.status_code, headers)
-    except requests.exceptions.RequestException as e:
-        log_error("Failed to proxy to frontend", error=e, path=path)
+    except requests.exceptions.ConnectionError as e:
+        log_error("Failed to connect to frontend", error=e, path=path, frontend_url=FRONTEND_URL)
         # フロントエンドが起動していない場合は、API情報を返す
         if path == '/' or path == '':
             return jsonify({
@@ -63,6 +63,8 @@ def proxy_to_frontend(path):
                 'version': '1.0.0',
                 'status': 'running',
                 'frontend': 'not available',
+                'frontend_url': FRONTEND_URL,
+                'error': 'Frontend server is not responding. Please check the logs.',
                 'endpoints': {
                     'health': '/api/health',
                     'auth': '/api/auth',
@@ -75,7 +77,53 @@ def proxy_to_frontend(path):
                 },
                 'documentation': 'See API_DOCUMENTATION.md for details'
             }), 200
-        return jsonify({'error': 'Frontend not available'}), 503
+        return jsonify({'error': 'Frontend not available', 'frontend_url': FRONTEND_URL}), 503
+    except requests.exceptions.Timeout as e:
+        log_error("Frontend request timeout", error=e, path=path, frontend_url=FRONTEND_URL)
+        if path == '/' or path == '':
+            return jsonify({
+                'service': 'poke-sup-backend',
+                'version': '1.0.0',
+                'status': 'running',
+                'frontend': 'timeout',
+                'frontend_url': FRONTEND_URL,
+                'error': 'Frontend server is not responding within timeout period.',
+                'endpoints': {
+                    'health': '/api/health',
+                    'auth': '/api/auth',
+                    'conversations': '/api/conversations',
+                    'messages': '/api/messages',
+                    'health_data': '/api/health-data',
+                    'reminders': '/api/reminders',
+                    'users': '/api/users',
+                    'health_goals': '/api/health-goals'
+                },
+                'documentation': 'See API_DOCUMENTATION.md for details'
+            }), 200
+        return jsonify({'error': 'Frontend timeout', 'frontend_url': FRONTEND_URL}), 503
+    except requests.exceptions.RequestException as e:
+        log_error("Failed to proxy to frontend", error=e, path=path, frontend_url=FRONTEND_URL)
+        if path == '/' or path == '':
+            return jsonify({
+                'service': 'poke-sup-backend',
+                'version': '1.0.0',
+                'status': 'running',
+                'frontend': 'not available',
+                'frontend_url': FRONTEND_URL,
+                'error': str(e),
+                'endpoints': {
+                    'health': '/api/health',
+                    'auth': '/api/auth',
+                    'conversations': '/api/conversations',
+                    'messages': '/api/messages',
+                    'health_data': '/api/health-data',
+                    'reminders': '/api/reminders',
+                    'users': '/api/users',
+                    'health_goals': '/api/health-goals'
+                },
+                'documentation': 'See API_DOCUMENTATION.md for details'
+            }), 200
+        return jsonify({'error': 'Frontend not available', 'frontend_url': FRONTEND_URL}), 503
 
 # ルートパスとAPI以外のパスをフロントエンドにプロキシ
 # 注意: このルートは最後に定義する必要があります（APIルートの後に）
