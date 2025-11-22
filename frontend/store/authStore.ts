@@ -28,8 +28,8 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => {
         console.log('Setting user:', user)
         const state = get()
-        // トークンがある場合は認証済みとみなす
-        const isAuth = !!(state.accessToken || localStorage.getItem('access_token'))
+        // トークンがある場合は認証済みとみなす（localStorageへのアクセスを最小限に）
+        const isAuth = !!state.accessToken
         set({ user, isAuthenticated: isAuth })
       },
       setToken: (token) => {
@@ -69,22 +69,14 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
-        // ストレージから復元された後、トークンがある場合は認証済みとみなす
+        // ストレージから復元された後、最小限の処理のみ実行
         if (!state) {
-          console.warn('State is undefined during rehydration')
           return
         }
         
+        // トークンの同期のみ（状態の更新は行わない）
         const token = localStorage.getItem('access_token')
-        console.log('Rehydrating storage', {
-          hasStateToken: !!state.accessToken,
-          hasLocalStorageToken: !!token,
-        })
-        
-        // トークンの同期: localStorageとstateの両方を確認
-        // stateにトークンがあるが、localStorageにない場合は同期
         if (state.accessToken && !token) {
-          console.log('Syncing token from state to localStorage')
           try {
             localStorage.setItem('access_token', state.accessToken)
           } catch (error) {
@@ -92,20 +84,9 @@ export const useAuthStore = create<AuthState>()(
           }
         }
         
-        // トークンとユーザーの両方が存在する場合のみ認証済みとみなす
-        const finalIsAuthenticated = !!(state.accessToken && state.user)
-        
-        // 状態が実際に変更された場合のみ更新を返す（無限ループを防ぐ）
-        if (state.isAuthenticated !== finalIsAuthenticated) {
-          console.log('Updating isAuthenticated during rehydration', { 
-            hasToken: !!state.accessToken, 
-            hasUser: !!state.user, 
-            isAuthenticated: finalIsAuthenticated 
-          })
-          return {
-            isAuthenticated: finalIsAuthenticated,
-          }
-        }
+        // 状態の更新は行わない（無限ループを防ぐ）
+        // isAuthenticatedは既にpersistで復元されているため、追加の更新は不要
+        return
       },
     }
   )
