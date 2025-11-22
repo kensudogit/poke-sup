@@ -30,16 +30,39 @@ socketio.run(app, host='0.0.0.0', port=port)
 
 #### 原因2: データベース接続エラー
 
+**症状:**
+```
+psycopg2.OperationalError: Connection refused
+connection to server at "localhost" (127.0.0.1), port 5432 failed
+```
+
+ログに `"database_configured": false` が表示される場合も、この問題を示しています。
+
 **確認:**
 - Railwayダッシュボード → Variables → `DATABASE_URL` が設定されているか
+- PostgreSQLサービスが追加されているか
 - PostgreSQLサービスが起動しているか
 
 **解決:**
-```python
-# config.py で postgres:// を postgresql:// に変換
-if database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-```
+
+1. **PostgreSQLサービスを追加**
+   - Railwayダッシュボード → プロジェクト
+   - 「New」→ 「Database」→ 「Add PostgreSQL」
+   - これにより、`DATABASE_URL`が自動的に設定されます
+
+2. **環境変数を確認**
+   - バックエンドサービス → Variables
+   - `DATABASE_URL=${{Postgres.DATABASE_URL}}` が設定されているか確認
+   - `Postgres` はPostgreSQLサービスの名前です（変更されている場合はその名前に置き換え）
+
+3. **config.py の確認**
+   ```python
+   # config.py で postgres:// を postgresql:// に変換
+   if database_url.startswith('postgres://'):
+       database_url = database_url.replace('postgres://', 'postgresql://', 1)
+   ```
+
+詳細は [RAILWAY_DATABASE_SETUP.md](./RAILWAY_DATABASE_SETUP.md) を参照してください。
 
 #### 原因3: 環境変数が設定されていない
 
@@ -143,6 +166,7 @@ ModuleNotFoundError: No module named 'flask'
 - [RAILWAY_FIX_PATH.md](./RAILWAY_FIX_PATH.md) - パス設定の問題と解決方法
 - [RAILWAY_FRONTEND_SETUP.md](./RAILWAY_FRONTEND_SETUP.md) - フロントエンド（Next.js）の設定ガイド
 - [RAILWAY_DEPENDENCIES_FIX.md](./RAILWAY_DEPENDENCIES_FIX.md) - 依存関係エラーの修正方法
+- [RAILWAY_DATABASE_SETUP.md](./RAILWAY_DATABASE_SETUP.md) - データベース接続エラーの修正方法
 
 ---
 

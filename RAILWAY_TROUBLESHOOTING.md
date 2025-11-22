@@ -178,29 +178,75 @@ def health_check():
 
 **症状:**
 ```
-sqlalchemy.exc.OperationalError: could not connect to server
+psycopg2.OperationalError: Connection refused
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
 ```
+
+または、ログに `"database_configured": false` が表示される
+
+**原因:**
+- PostgreSQLサービスが追加されていない
+- `DATABASE_URL`環境変数が設定されていない
+- 環境変数が正しく参照されていない
 
 **解決方法:**
 
-#### ステップ1: DATABASE_URLの確認
+#### ステップ1: PostgreSQLサービスを追加
+
+1. **Railwayダッシュボードにログイン**
+   - https://railway.app にアクセス
+
+2. **プロジェクトを選択**
+   - デプロイしたプロジェクトをクリック
+
+3. **PostgreSQLサービスを追加**
+   - 「New」ボタンをクリック
+   - 「Database」を選択
+   - 「Add PostgreSQL」をクリック
+
+4. **自動設定の確認**
+   - PostgreSQLサービスを追加すると、`DATABASE_URL`環境変数が自動的に設定されます
+   - バックエンドサービス → Variables で確認
+
+#### ステップ2: DATABASE_URLの確認
+
+**Railwayダッシュボード:**
+- バックエンドサービス → Variables
+- `DATABASE_URL=${{Postgres.DATABASE_URL}}` が設定されているか確認
+
+**CLI:**
 ```bash
 railway variables
 ```
 
-または、Railwayダッシュボードで確認
+**重要**: `${{Postgres.DATABASE_URL}}` の形式で設定されていることを確認
+- `Postgres` はPostgreSQLサービスの名前です
+- サービス名が異なる場合は、その名前に置き換えてください
 
-#### ステップ2: PostgreSQLサービスの確認
+#### ステップ3: PostgreSQLサービスの確認
 - RailwayダッシュボードでPostgreSQLサービスが起動しているか確認
 - サービスが停止している場合は再起動
+- バックエンドサービスとPostgreSQLサービスが同じプロジェクト内にあるか確認
 
-#### ステップ3: 接続文字列の変換
+#### ステップ4: 接続文字列の変換
 ```python
 # config.py
 database_url = os.getenv('DATABASE_URL')
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 ```
+
+#### ステップ5: ログで確認
+
+アプリケーション起動時のログで以下を確認：
+
+```json
+{"level": "info", "message": "Application starting", "database_configured": true}
+```
+
+`database_configured: false` の場合は、`DATABASE_URL`が設定されていません。
+
+詳細は [RAILWAY_DATABASE_SETUP.md](./RAILWAY_DATABASE_SETUP.md) を参照してください。
 
 ---
 

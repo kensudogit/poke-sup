@@ -60,10 +60,25 @@ if __name__ == '__main__':
         
         with app.app_context():
             try:
+                # データベース接続をテスト
+                db.session.execute(db.text('SELECT 1'))
                 db.create_all()
                 log_info("Database tables created/verified")
             except Exception as e:
-                log_error("Failed to create database tables", error=e)
+                database_url = os.environ.get('DATABASE_URL', 'not set')
+                log_error(
+                    "Failed to create database tables",
+                    error=e,
+                    database_url_set=bool(database_url and database_url != 'not set'),
+                    error_message="Please ensure PostgreSQL service is added and DATABASE_URL is set in Railway"
+                )
+                # データベース接続エラーの場合は、より明確なメッセージを表示
+                if 'Connection refused' in str(e) or 'OperationalError' in str(type(e).__name__):
+                    log_error(
+                        "Database connection failed",
+                        error=e,
+                        hint="Add PostgreSQL service in Railway and set DATABASE_URL=${{Postgres.DATABASE_URL}}"
+                    )
                 sys.exit(1)
         
         # Railway用のポート設定
