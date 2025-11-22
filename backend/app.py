@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory, send_file
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_jwt_extended import JWTManager
@@ -9,6 +9,8 @@ from utils.logging import log_info, log_error, log_warn
 import eventlet
 import os
 import sys
+import requests
+from urllib.parse import urljoin
 
 eventlet.monkey_patch()
 
@@ -24,61 +26,71 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 # Register routes
 register_routes(app, socketio)
 
-# フロントエンドの静的ファイルディレクトリ
-FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'out')
-INDEX_HTML = 'index.html'
+# Next.jsフロントエンドサーバーのURL
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 
-def serve_frontend_file(path):
-    """フロントエンドの静的ファイルを配信"""
+def proxy_to_frontend(path):
+    """Next.jsフロントエンドサーバーにリクエストをプロキシ"""
     try:
-        # パスを正規化
-        if path == '' or path == '/':
-            path = INDEX_HTML
+        frontend_url = urljoin(FRONTEND_URL, path)
+        # クエリパラメータも含める
+        if request.query_string:
+            frontend_url += '?' + request.query_string.decode('utf-8')
         
-        # ファイルパスを構築
-        file_path = os.path.join(FRONTEND_DIR, path)
+        # リクエストを転送
+        resp = requests.request(
+            method=request.method,
+            url=frontend_url,
+            headers={key: value for (key, value) in request.headers if key != 'Host'},
+            data=request.get_data(),
+            cookies=request.cookies,
+            allow_redirects=False,
+            timeout=10
+        )
         
-        # セキュリティチェック（ディレクトリトラバーサル防止）
-        frontend_abs = os.path.abspath(FRONTEND_DIR)
-        file_abs = os.path.abspath(file_path)
-        if not file_abs.startswith(frontend_abs):
-            log_warn("Invalid file path requested", path=path)
-            return jsonify({'error': 'Invalid path'}), 403
+        # レスポンスを返す
+        excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+        headers = [(name, value) for (name, value) in resp.raw.headers.items()
+                   if name.lower() not in excluded_headers]
         
-        # ファイルが存在するか確認
-        if os.path.isfile(file_path):
-            return send_file(file_path)
-        elif os.path.isdir(file_path):
-            # ディレクトリの場合はindex.htmlを返す
-            index_path = os.path.join(file_path, INDEX_HTML)
-            if os.path.isfile(index_path):
-                return send_file(index_path)
-        
-        # ファイルが見つからない場合は、index.htmlを返す（SPAのルーティング用）
-        index_html = os.path.join(FRONTEND_DIR, INDEX_HTML)
-        if os.path.isfile(index_html):
-            return send_file(index_html)
-        
-        log_warn("Frontend file not found", path=path)
-        return jsonify({'error': 'File not found'}), 404
-    except Exception as e:
-        log_error("Failed to serve frontend file", error=e, path=path)
-        return jsonify({'error': 'Internal server error'}), 500
+        return Response(resp.content, resp.status_code, headers)
+    except requests.exceptions.RequestException as e:
+        log_error("Failed to proxy to frontend", error=e, path=path)
+        # フロントエンドが起動していない場合は、API情報を返す
+        if path == '/' or path == '':
+            return jsonify({
+                'service': 'poke-sup-backend',
+                'version': '1.0.0',
+                'status': 'running',
+                'frontend': 'not available',
+                'endpoints': {
+                    'health': '/api/health',
+                    'auth': '/api/auth',
+                    'conversations': '/api/conversations',
+                    'messages': '/api/messages',
+                    'health_data': '/api/health-data',
+                    'reminders': '/api/reminders',
+                    'users': '/api/users',
+                    'health_goals': '/api/health-goals'
+                },
+                'documentation': 'See API_DOCUMENTATION.md for details'
+            }), 200
+        return jsonify({'error': 'Frontend not available'}), 503
 
-# ルートパスとAPI以外のパスをフロントエンドの静的ファイルとして配信
+# ルートパスとAPI以外のパスをフロントエンドにプロキシ
 # 注意: このルートは最後に定義する必要があります（APIルートの後に）
-@app.route('/', defaults={'path': ''}, methods=['GET'])
-@app.route('/<path:path>', methods=['GET'])
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
+@app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
 def catch_all(path):
-    """API以外のリクエストをフロントエンドの静的ファイルとして配信"""
+    """API以外のリクエストをフロントエンドにプロキシ"""
     # APIパスは除外（既に登録されたルートで処理される）
     if path.startswith('api/'):
         # ここに到達した場合、APIルートが見つからなかったことを意味する
         log_warn("API endpoint not found", path=request.path)
         return jsonify({'error': 'API endpoint not found'}), 404
     
-    # 静的ファイルを配信
-    return serve_frontend_file(path)
+    # フロントエンドにプロキシ
+    return proxy_to_frontend(path)
 
 # エラーハンドラー
 @app.errorhandler(404)
