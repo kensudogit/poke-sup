@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from flask_socketio import SocketIO
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, verify_jwt_in_request
+from flask_jwt_extended.exceptions import JWTDecodeError, NoAuthorizationError
 from config import Config
 from extensions import db
 from routes import register_routes
@@ -140,6 +141,22 @@ def catch_all(path):
     # フロントエンドにプロキシ
     return proxy_to_frontend(path)
 
+# JWTエラーハンドラー
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    log_warn("JWT token expired", path=request.path)
+    return jsonify({'error': 'Token has expired', 'code': 'TOKEN_EXPIRED'}), 401
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    log_warn("Invalid JWT token", path=request.path, error=str(error))
+    return jsonify({'error': 'Invalid token', 'code': 'INVALID_TOKEN', 'details': str(error)}), 422
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    log_warn("Missing JWT token", path=request.path, error=str(error))
+    return jsonify({'error': 'Authorization token is missing', 'code': 'MISSING_TOKEN'}), 401
+
 # エラーハンドラー
 @app.errorhandler(404)
 def not_found(error):
@@ -148,7 +165,10 @@ def not_found(error):
 
 @app.errorhandler(422)
 def unprocessable_entity(error):
-    log_warn("Unprocessable entity", path=request.path, error=str(error))
+    log_warn("Unprocessable entity", path=request.path, error=str(error), error_type=type(error).__name__)
+    # JWT関連のエラーかどうかを確認
+    if isinstance(error, (JWTDecodeError, NoAuthorizationError)):
+        return jsonify({'error': 'JWT authentication failed', 'details': str(error)}), 422
     return jsonify({'error': 'Unprocessable entity', 'details': str(error)}), 422
 
 @app.errorhandler(500)

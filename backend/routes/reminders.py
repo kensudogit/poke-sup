@@ -15,6 +15,13 @@ def get_reminders():
         is_completed = request.args.get('is_completed')
         upcoming_only = request.args.get('upcoming_only', 'false')
         
+        log_info("Get reminders request", 
+                userId=user_id, 
+                is_completed=is_completed, 
+                upcoming_only=upcoming_only,
+                path=request.path,
+                query_string=request.query_string.decode('utf-8'))
+        
         query = Reminder.query.filter_by(user_id=user_id)
         
         if is_completed is not None:
@@ -28,10 +35,15 @@ def get_reminders():
         
         reminders = query.order_by(Reminder.scheduled_at).all()
         
+        log_info("Reminders retrieved", userId=user_id, count=len(reminders))
+        
         return jsonify([reminder.to_dict() for reminder in reminders]), 200
     except Exception as e:
-        from utils.logging import log_error
-        log_error("Get reminders failed", error=e, userId=user_id if 'user_id' in locals() else None)
+        log_error("Get reminders failed", 
+                 error=e, 
+                 error_type=type(e).__name__,
+                 userId=user_id if 'user_id' in locals() else None,
+                 path=request.path)
         return jsonify({'error': 'Failed to retrieve reminders', 'details': str(e)}), 500
 
 @reminders_bp.route('', methods=['POST'])
