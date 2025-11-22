@@ -25,10 +25,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   const hasCheckedAuth = useRef(false)
+  const checkCount = useRef(0)
 
   useEffect(() => {
     // 既にチェック済みの場合はスキップ（無限ループを防ぐ）
     if (hasCheckedAuth.current) {
+      return
+    }
+    
+    // チェック回数を制限（無限ループを防ぐ）
+    checkCount.current++
+    if (checkCount.current > 1) {
       return
     }
     
@@ -41,9 +48,7 @@ export default function DashboardPage() {
       console.log('Not authenticated, redirecting to login', { 
         isAuthenticated, 
         hasUser: !!user, 
-        hasToken: !!finalToken,
-        hasLocalStorageToken: !!token,
-        hasStateToken: !!stateToken
+        hasToken: !!finalToken
       })
       hasCheckedAuth.current = true
       router.push('/')

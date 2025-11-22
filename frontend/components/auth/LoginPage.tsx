@@ -128,11 +128,11 @@ export default function LoginPage() {
         console.log('Token and user set, redirecting...')
         toast.success(isRegistering ? '登録に成功しました' : 'ログインに成功しました')
         
-        // リダイレクト（少し待ってから）
-        setTimeout(() => {
+        // リダイレクト（状態の更新が完了してから）
+        requestAnimationFrame(() => {
           console.log('Navigating to dashboard')
           router.push('/dashboard')
-        }, 200)
+        })
       } else {
         throw new Error('Invalid response format')
       }
