@@ -27,8 +27,22 @@ const getApiUrl = () => {
   return 'http://localhost:5002/api'
 }
 
+// 初期baseURLを設定（実行時に動的に更新される）
+let baseURL = '/api'
+
+// ブラウザ環境でローカル開発環境を検出
+if (typeof window !== 'undefined') {
+  const hostname = window.location.hostname
+  const port = window.location.port
+  
+  // ローカル開発環境の場合のみ絶対URLを使用
+  if ((hostname === 'localhost' || hostname === '127.0.0.1') && (port === '3000' || port === '3002' || port === '')) {
+    baseURL = 'http://localhost:5002/api'
+  }
+}
+
 const api = axios.create({
-  baseURL: getApiUrl(),
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   },

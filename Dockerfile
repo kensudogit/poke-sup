@@ -44,16 +44,15 @@ COPY --from=frontend /app/frontend/.next /app/frontend/.next
 COPY --from=frontend /app/frontend/package*.json /app/frontend/
 COPY --from=frontend /app/frontend/node_modules /app/frontend/node_modules
 
+# publicディレクトリをコピー（画像ファイルなど）
+COPY frontend/public /app/frontend/public
+
 # Node.jsをインストール（Next.jsサーバー用）
 RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     curl \
     && rm -rf /var/lib/apt/lists/*
-
-# publicディレクトリを作成（Next.jsでは通常.nextにコピーされるため、必要に応じて作成）
-# フロントエンドにpublicディレクトリがある場合は、手動でコピーする必要があります
-RUN mkdir -p /app/frontend/public
 
 # 環境変数を設定
 ENV FLASK_APP=backend/app.py
