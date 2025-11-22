@@ -1,15 +1,25 @@
 import axios from 'axios'
 
-// Railway環境では、フロントエンドとバックエンドが同じポートで動いているため、
-// 相対パスまたは現在のオリジンを使用します
+// API URLの設定
+// ローカル開発環境: localhost:5002
+// Railway環境: 同じオリジン（window.location.origin）
 const getApiUrl = () => {
-  // 環境変数が設定されている場合はそれを使用
+  // 環境変数が設定されている場合はそれを使用（優先）
   if (process.env.NEXT_PUBLIC_API_URL) {
     return `${process.env.NEXT_PUBLIC_API_URL}/api`
   }
   
-  // ブラウザ環境では、現在のオリジンを使用（Railway環境で正しく動作）
+  // ブラウザ環境での判定
   if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname
+    const port = window.location.port
+    
+    // ローカル開発環境（localhostまたは127.0.0.1、かつポート3000番台）
+    if ((hostname === 'localhost' || hostname === '127.0.0.1') && (port === '3000' || port === '3002' || port === '')) {
+      return 'http://localhost:5002/api'
+    }
+    
+    // Railway環境やその他の本番環境では、現在のオリジンを使用
     return `${window.location.origin}/api`
   }
   
