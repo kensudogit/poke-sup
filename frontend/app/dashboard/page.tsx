@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
@@ -25,39 +25,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   const hasCheckedAuth = useRef(false)
-  const mounted = useRef(false)
-
-  useEffect(() => {
-    // マウント時のみ実行（無限ループを防ぐ）
-    if (mounted.current || hasCheckedAuth.current) {
-      return
-    }
-    mounted.current = true
-    
-    // 認証状態とトークンの両方を確認
-    const token = localStorage.getItem('access_token')
-    const state = useAuthStore.getState()
-    const finalToken = state.accessToken || token
-    const finalUser = state.user
-    const finalIsAuth = state.isAuthenticated
-    
-    if (!finalIsAuth || !finalUser || !finalToken) {
-      console.log('Not authenticated, redirecting to login', { 
-        isAuthenticated: finalIsAuth, 
-        hasUser: !!finalUser, 
-        hasToken: !!finalToken
-      })
-      hasCheckedAuth.current = true
-      router.push('/')
-      return
-    }
-    
-    hasCheckedAuth.current = true
-    console.log('Authenticated, fetching stats')
-    fetchStats()
-    // 依存配列を空にして、マウント時のみ実行
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const hasFetchedStats = useRef(false)
 
   const fetchStats = async () => {
     try {
@@ -81,6 +49,39 @@ export default function DashboardPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // マウント時のみ実行（無限ループを防ぐ）
+    if (hasCheckedAuth.current) {
+      return
+    }
+    hasCheckedAuth.current = true
+    
+    // 認証状態とトークンの両方を確認
+    const token = localStorage.getItem('access_token')
+    const state = useAuthStore.getState()
+    const finalToken = state.accessToken || token
+    const finalUser = state.user
+    const finalIsAuth = state.isAuthenticated
+    
+    if (!finalIsAuth || !finalUser || !finalToken) {
+      console.log('Not authenticated, redirecting to login', { 
+        isAuthenticated: finalIsAuth, 
+        hasUser: !!finalUser, 
+        hasToken: !!finalToken
+      })
+      router.push('/')
+      return
+    }
+    
+    if (!hasFetchedStats.current) {
+      hasFetchedStats.current = true
+      console.log('Authenticated, fetching stats')
+      fetchStats()
+    }
+    // 依存配列を空にして、マウント時のみ実行
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (!isAuthenticated) {
     return null

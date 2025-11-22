@@ -68,33 +68,9 @@ export const useAuthStore = create<AuthState>()(
         accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
-        // ストレージから復元された後、最小限の処理のみ実行
-        if (!state) {
-          return
-        }
-        
-        // トークンの同期（読み取り専用、状態の更新は行わない）
-        const token = localStorage.getItem('access_token')
-        
-        // stateにトークンがあるが、localStorageにない場合は同期
-        if (state.accessToken && !token) {
-          try {
-            localStorage.setItem('access_token', state.accessToken)
-            console.log('Token synced from state to localStorage during rehydration')
-          } catch (error) {
-            console.error('Failed to save token to localStorage during rehydration:', error)
-          }
-        }
-        
-        // localStorageにトークンがあるが、stateにない場合はログのみ（状態は更新しない）
-        if (token && !state.accessToken) {
-          console.log('Token found in localStorage but not in state (will be synced on next action)')
-        }
-        
-        // 状態の更新は絶対に行わない（無限ループを防ぐ）
-        // persistが既に状態を復元しているため、追加の更新は不要
-        // undefinedを返すことで、状態の更新を防ぐ
+      onRehydrateStorage: () => {
+        // リハイドレーション時のコールバックを無効化（無限ループを防ぐ）
+        // 状態の更新は一切行わない
         return undefined
       },
     }
