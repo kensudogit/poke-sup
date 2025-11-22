@@ -27,19 +27,8 @@ const getApiUrl = () => {
   return 'http://localhost:5002/api'
 }
 
-// 初期baseURLを設定（実行時に動的に更新される）
-let baseURL = '/api'
-
-// ブラウザ環境でローカル開発環境を検出
-if (globalThis.window !== undefined) {
-  const hostname = globalThis.window.location.hostname
-  const port = globalThis.window.location.port
-  
-  // ローカル開発環境の場合のみ絶対URLを使用
-  if ((hostname === 'localhost' || hostname === '127.0.0.1') && (port === '3000' || port === '3002' || port === '')) {
-    baseURL = 'http://localhost:5002/api'
-  }
-}
+// 初期baseURLを設定（getApiUrl関数を使用）
+const baseURL = getApiUrl()
 
 const api = axios.create({
   baseURL: baseURL,
@@ -47,6 +36,11 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+// デバッグ用: baseURLをログ出力
+if (process.env.NODE_ENV === 'development') {
+  console.log('API baseURL:', baseURL)
+}
 
 // Add token to requests
 api.interceptors.request.use((config) => {

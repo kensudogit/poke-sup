@@ -86,9 +86,17 @@ export default function LoginPage() {
       
       console.log('Sending request data:', { ...requestData, password: '***' })
       
+      console.log('API baseURL:', api.defaults.baseURL)
+      console.log('Full URL:', `${api.defaults.baseURL}${endpoint}`)
+      
       const response = await api.post(endpoint, requestData)
 
-      console.log('Response received:', response.data)
+      console.log('Response received:', {
+        status: response.status,
+        data: response.data,
+        hasAccessToken: !!response.data.access_token,
+        hasUser: !!response.data.user,
+      })
       
       if (response.data.access_token && response.data.user) {
         // トークンとユーザー情報を設定（トークンを先に設定）
@@ -138,8 +146,15 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login error:', err)
-      console.error('Error response:', err.response?.data)
-      console.error('Error status:', err.response?.status)
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        url: err.config?.url,
+        baseURL: err.config?.baseURL,
+        fullURL: err.config?.baseURL + err.config?.url,
+      })
       
       let errorMessage = isRegistering ? '新規登録に失敗しました' : 'ログインに失敗しました'
       
@@ -156,7 +171,14 @@ export default function LoginPage() {
         errorMessage = `サーバーエラー: ${serverError}`
         console.error('Server error details:', serverError)
       } else if (!err.response) {
-        errorMessage = 'ネットワークエラーが発生しました。接続を確認してください'
+        // ネットワークエラーまたはCORSエラーの可能性
+        if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
+          errorMessage = 'サーバーに接続できません。サーバーが起動しているか確認してください'
+        } else if (err.message?.includes('CORS')) {
+          errorMessage = 'CORSエラーが発生しました。サーバーの設定を確認してください'
+        } else {
+          errorMessage = `ネットワークエラー: ${err.message || '接続を確認してください'}`
+        }
       }
       
       setError(errorMessage)
