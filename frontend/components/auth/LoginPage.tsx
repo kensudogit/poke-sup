@@ -90,9 +90,31 @@ export default function LoginPage() {
       console.log('Response received:', response.data)
       
       if (response.data.access_token && response.data.user) {
-        // トークンとユーザー情報を設定
-        setToken(response.data.access_token)
+        // トークンとユーザー情報を設定（トークンを先に設定）
+        const token = response.data.access_token
+        console.log('Setting token and user', {
+          tokenLength: token?.length,
+          tokenPrefix: token?.substring(0, 20),
+          userId: response.data.user.id,
+        })
+        
+        setToken(token)
+        // トークンが確実に保存されたことを確認
+        const savedToken = localStorage.getItem('access_token')
+        if (savedToken !== token) {
+          console.warn('Token mismatch after setting, retrying...')
+          localStorage.setItem('access_token', token)
+        }
+        
         setUser(response.data.user)
+        
+        // 最終確認
+        const finalToken = localStorage.getItem('access_token')
+        console.log('Token and user set', {
+          tokenInLocalStorage: !!finalToken,
+          tokenMatches: finalToken === token,
+          userSet: !!response.data.user,
+        })
         
         console.log('Token and user set, redirecting...')
         toast.success(isRegistering ? '登録に成功しました' : 'ログインに成功しました')
