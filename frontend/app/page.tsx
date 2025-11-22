@@ -10,33 +10,36 @@ export default function Home() {
   const pathname = usePathname()
   const { user, isAuthenticated, accessToken } = useAuthStore()
   const hasRedirected = useRef(false)
-  const checkCount = useRef(0)
+  const mounted = useRef(false)
 
   useEffect(() => {
-    // 既にリダイレクト済み、または既にダッシュボードにいる場合は何もしない
-    if (hasRedirected.current || pathname === '/dashboard') {
+    // マウント時のみ実行（無限ループを防ぐ）
+    if (mounted.current || hasRedirected.current) {
       return
     }
+    mounted.current = true
     
-    // チェック回数を制限（無限ループを防ぐ）
-    checkCount.current++
-    if (checkCount.current > 1) {
+    // 既にダッシュボードにいる場合は何もしない
+    if (pathname === '/dashboard') {
       return
     }
     
     // トークンを確認（localStorageとstateの両方）
     const localStorageToken = localStorage.getItem('access_token')
-    const finalToken = accessToken || localStorageToken
+    const state = useAuthStore.getState()
+    const finalToken = state.accessToken || localStorageToken
+    const finalUser = state.user
+    const finalIsAuth = state.isAuthenticated
     
     // 認証済みでユーザー情報とトークンがある場合のみリダイレクト
-    if (isAuthenticated && user && finalToken) {
+    if (finalIsAuth && finalUser && finalToken) {
       console.log('Already authenticated, redirecting to dashboard')
       hasRedirected.current = true
       router.push('/dashboard')
     }
-    // 依存配列を最小限に（pathnameとrouterは安定しているため除外）
+    // 依存配列を空にして、マウント時のみ実行
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user, accessToken])
+  }, [])
 
   // 認証済みの場合は何も表示しない（リダイレクト中）
   if (isAuthenticated && user && accessToken) {

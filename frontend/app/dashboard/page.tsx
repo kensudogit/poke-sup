@@ -25,29 +25,26 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   const hasCheckedAuth = useRef(false)
-  const checkCount = useRef(0)
+  const mounted = useRef(false)
 
   useEffect(() => {
-    // 既にチェック済みの場合はスキップ（無限ループを防ぐ）
-    if (hasCheckedAuth.current) {
+    // マウント時のみ実行（無限ループを防ぐ）
+    if (mounted.current || hasCheckedAuth.current) {
       return
     }
-    
-    // チェック回数を制限（無限ループを防ぐ）
-    checkCount.current++
-    if (checkCount.current > 1) {
-      return
-    }
+    mounted.current = true
     
     // 認証状態とトークンの両方を確認
     const token = localStorage.getItem('access_token')
-    const stateToken = useAuthStore.getState().accessToken
-    const finalToken = token || stateToken
+    const state = useAuthStore.getState()
+    const finalToken = state.accessToken || token
+    const finalUser = state.user
+    const finalIsAuth = state.isAuthenticated
     
-    if (!isAuthenticated || !user || !finalToken) {
+    if (!finalIsAuth || !finalUser || !finalToken) {
       console.log('Not authenticated, redirecting to login', { 
-        isAuthenticated, 
-        hasUser: !!user, 
+        isAuthenticated: finalIsAuth, 
+        hasUser: !!finalUser, 
         hasToken: !!finalToken
       })
       hasCheckedAuth.current = true
@@ -58,8 +55,9 @@ export default function DashboardPage() {
     hasCheckedAuth.current = true
     console.log('Authenticated, fetching stats')
     fetchStats()
+    // 依存配列を空にして、マウント時のみ実行
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user])
+  }, [])
 
   const fetchStats = async () => {
     try {

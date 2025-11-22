@@ -74,7 +74,7 @@ export const useAuthStore = create<AuthState>()(
           return
         }
         
-        // トークンの同期
+        // トークンの同期（読み取り専用、状態の更新は行わない）
         const token = localStorage.getItem('access_token')
         
         // stateにトークンがあるが、localStorageにない場合は同期
@@ -87,15 +87,15 @@ export const useAuthStore = create<AuthState>()(
           }
         }
         
-        // localStorageにトークンがあるが、stateにない場合は同期
+        // localStorageにトークンがあるが、stateにない場合はログのみ（状態は更新しない）
         if (token && !state.accessToken) {
-          console.log('Token found in localStorage but not in state, syncing...')
-          // 状態を更新しない（無限ループを防ぐため、次のレンダリングで反映される）
+          console.log('Token found in localStorage but not in state (will be synced on next action)')
         }
         
-        // 状態の更新は行わない（無限ループを防ぐ）
-        // isAuthenticatedは既にpersistで復元されているため、追加の更新は不要
-        return
+        // 状態の更新は絶対に行わない（無限ループを防ぐ）
+        // persistが既に状態を復元しているため、追加の更新は不要
+        // undefinedを返すことで、状態の更新を防ぐ
+        return undefined
       },
     }
   )
