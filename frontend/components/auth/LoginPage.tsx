@@ -8,6 +8,7 @@ import { z } from 'zod'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Heart, Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react'
+import Image from 'next/image'
 import { toast } from '@/components/common/Toast'
 
 const loginSchema = z.object({
@@ -162,8 +163,22 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 animate-fade-in">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full mb-4">
-              <Heart className="w-8 h-8 text-white" />
+            <div className="inline-flex items-center justify-center mb-4 relative">
+              <div className="relative w-32 h-32 rounded-full overflow-hidden shadow-lg ring-4 ring-white animate-sway">
+                <Image
+                  src="/logo.png"
+                  alt="ポケさぽロゴ"
+                  width={128}
+                  height={128}
+                  className="object-cover w-full h-full relative z-10"
+                  style={{
+                    filter: 'brightness(1.1) saturate(1.2) contrast(1.1)',
+                  }}
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-full blur-xl -z-0"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-400/30 to-secondary-400/30 mix-blend-multiply rounded-full"></div>
+              </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">ポケさぽ</h1>
             <p className="text-gray-600">患者と医療従事者のコミュニケーションプラットフォーム</p>

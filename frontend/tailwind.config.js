@@ -37,6 +37,7 @@ module.exports = {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
+        'sway': 'sway 3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -50,6 +51,12 @@ module.exports = {
         slideDown: {
           '0%': { transform: 'translateY(-10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        sway: {
+          '0%, 100%': { transform: 'rotate(-3deg) translateY(0px)' },
+          '25%': { transform: 'rotate(3deg) translateY(-2px)' },
+          '50%': { transform: 'rotate(-2deg) translateY(0px)' },
+          '75%': { transform: 'rotate(2deg) translateY(-1px)' },
         },
       },
     },
