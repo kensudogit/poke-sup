@@ -112,14 +112,16 @@ if [ "$FRONTEND_READY" = "false" ]; then\n\
   echo "Checking if frontend process is running..."\n\
   ps aux | grep -E "node|npm" | grep -v grep || true\n\
   echo "==========================================="\n\
+  echo "Backend will continue to start even if frontend is not ready"\n\
 fi\n\
 \n\
 # バックエンドを起動（フォアグラウンド）\n\
 echo "==========================================="\n\
 echo "Starting backend..."\n\
 echo "==========================================="\n\
+echo "Backend will use PORT environment variable: ${PORT:-5000}"\n\
 cd /app/backend\n\
-python app.py\n\
+exec python app.py\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # 統合起動スクリプトを使用

@@ -3,6 +3,8 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python backend/app.py"
+# startCommandをコメントアウトしてDockerfileのCMDを使用
+# DockerfileのCMDがフロントエンドとバックエンドの両方を起動します
+# startCommand = "python backend/app.py"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
