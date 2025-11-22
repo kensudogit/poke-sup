@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import ProfileModal from './ProfileModal'
 
 interface DashboardLayoutProps {
@@ -48,13 +47,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 rounded-full overflow-hidden shadow-md ring-2 ring-white animate-sway">
-            <Image
+            <img
               src="/utsubo_image1.png"
               alt="ポケさぽロゴ"
-              width={32}
-              height={32}
               className="object-cover w-full h-full"
-              unoptimized
+              style={{ width: '100%', height: '100%' }}
             />
           </div>
         </div>
@@ -77,13 +74,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <div className="relative w-10 h-10 rounded-full overflow-hidden shadow-md ring-2 ring-white animate-sway">
-                  <Image
+                  <img
                     src="/utsubo_image1.png"
                     alt="ポケさぽロゴ"
-                    width={40}
-                    height={40}
                     className="object-cover w-full h-full"
-                    unoptimized
+                    style={{ width: '100%', height: '100%' }}
                   />
                 </div>
               </div>

@@ -8,7 +8,6 @@ import { z } from 'zod'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Heart, Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react'
-import Image from 'next/image'
 import { toast } from '@/components/common/Toast'
 
 const loginSchema = z.object({
@@ -165,14 +164,11 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center mb-4 relative">
               <div className="relative w-32 h-32 rounded-full overflow-hidden shadow-lg ring-4 ring-white animate-sway">
-                <Image
+                <img
                   src="/utsubo_image1.png"
                   alt="ポケさぽロゴ"
-                  width={128}
-                  height={128}
                   className="object-cover w-full h-full"
-                  priority
-                  unoptimized
+                  style={{ width: '100%', height: '100%' }}
                 />
               </div>
             </div>
