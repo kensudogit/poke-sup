@@ -62,7 +62,9 @@ connection to server at "localhost" (127.0.0.1), port 5432 failed
        database_url = database_url.replace('postgres://', 'postgresql://', 1)
    ```
 
-詳細は [RAILWAY_DATABASE_SETUP.md](./RAILWAY_DATABASE_SETUP.md) を参照してください。
+詳細は以下を参照してください：
+- [RAILWAY_DATABASE_QUICK_FIX.md](./RAILWAY_DATABASE_QUICK_FIX.md) - 3ステップのクイック修正
+- [RAILWAY_DATABASE_SETUP.md](./RAILWAY_DATABASE_SETUP.md) - 詳細な設定ガイド
 
 #### 原因3: 環境変数が設定されていない
 
