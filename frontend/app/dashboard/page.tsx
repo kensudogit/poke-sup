@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
+
+// グローバルフラグでログアウトの重複を防ぐ
+let globalLogoutDone = false
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import ConversationsList from '@/components/conversations/ConversationsList'
 import HealthDataDashboard from '@/components/health/HealthDataDashboard'
@@ -65,6 +68,9 @@ export default function DashboardPage() {
     }
   }
 
+  // グローバルフラグでログアウトの重複を防ぐ
+  let globalLogoutDone = false
+  
   useEffect(() => {
     // マウント時のみ実行（無限ループを防ぐ）
     if (hasCheckedAuth.current) {
@@ -72,33 +78,86 @@ export default function DashboardPage() {
     }
     hasCheckedAuth.current = true
     
-    // 認証状態とトークンの両方を確認
-    const token = localStorage.getItem('access_token')
-    const state = useAuthStore.getState()
-    const finalToken = state.accessToken || token
-    const finalUser = state.user
-    const finalIsAuth = state.isAuthenticated
-    
-    if (!finalIsAuth || !finalUser || !finalToken) {
-      console.log('Not authenticated, redirecting to login', { 
-        isAuthenticated: finalIsAuth, 
-        hasUser: !!finalUser, 
-        hasToken: !!finalToken
-      })
-      // 状態をクリアしてからリダイレクト
+    // 認証状態とトークンの両方を確認（少し待ってから、トークンが保存される時間を確保）
+    const checkAuth = () => {
+      const token = localStorage.getItem('access_token')
+      
+      // Zustandのストレージからも確認
+      let stateToken = null
+      let stateUser = null
       try {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('auth-storage')
-        useAuthStore.getState().logout()
+        const authStorage = localStorage.getItem('auth-storage')
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage)
+          stateToken = parsed?.state?.accessToken
+          stateUser = parsed?.state?.user
+        }
       } catch (e) {
-        console.warn('Failed to clear auth state:', e)
+        console.warn('Failed to parse auth-storage:', e)
       }
-      // リダイレクト（少し待ってから実行）
-      setTimeout(() => {
-        router.push('/')
-      }, 100)
-      return
+      
+      const finalToken = token || stateToken
+      const finalUser = stateUser
+      
+      if (!finalToken || !finalUser) {
+        console.log('Not authenticated, redirecting to login', { 
+          hasToken: !!finalToken,
+          hasUser: !!finalUser,
+          localStorageToken: !!token,
+          stateToken: !!stateToken,
+        })
+        
+        // ログアウト処理を一度だけ実行
+        if (!globalLogoutDone) {
+          globalLogoutDone = true
+          try {
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('auth-storage')
+            useAuthStore.getState().logout()
+          } catch (e) {
+            console.warn('Failed to clear auth state:', e)
+          }
+        }
+        
+        // リダイレクト（少し待ってから実行）
+        setTimeout(() => {
+          if (globalThis.window && globalThis.window.location.pathname !== '/') {
+            globalThis.window.location.href = '/'
+          }
+        }, 200)
+        return
+      }
+      
+      // 認証済みの場合、統計を取得
+      if (!hasFetchedStats.current) {
+        hasFetchedStats.current = true
+        console.log('Authenticated, waiting for token to be saved before fetching stats')
+        // トークンが確実に保存されるまで少し待つ
+        setTimeout(() => {
+          const confirmedToken = localStorage.getItem('access_token')
+          if (confirmedToken) {
+            console.log('Token confirmed, fetching stats')
+            fetchStats()
+          } else {
+            console.warn('Token not found after delay, retrying...')
+            // もう一度試行
+            setTimeout(() => {
+              const retryToken = localStorage.getItem('access_token')
+              if (retryToken) {
+                console.log('Token found on retry, fetching stats')
+                fetchStats()
+              } else {
+                console.error('Token still not found, skipping stats fetch')
+                setLoading(false)
+              }
+            }, 500)
+          }
+        }, 300)
+      }
     }
+    
+    // 少し待ってからチェック（トークンが保存される時間を確保）
+    setTimeout(checkAuth, 500)
     
     if (!hasFetchedStats.current) {
       hasFetchedStats.current = true

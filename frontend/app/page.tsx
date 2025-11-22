@@ -51,7 +51,7 @@ export default function Home() {
     }
     
     // 少し待ってからチェック（状態の更新を待つ）
-    setTimeout(checkAuth, 200)
+    setTimeout(checkAuth, 500)
     // 依存配列を空にして、マウント時のみ実行
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
