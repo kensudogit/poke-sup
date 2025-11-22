@@ -36,18 +36,47 @@ psycopg2.OperationalError: Connection refused
 connection to server at "localhost" (127.0.0.1), port 5432 failed
 ```
 
+または、接続文字列は提供されているが、アプリケーションが起動できない場合。
+
 ログに `"database_configured": false` が表示される場合も、この問題を示しています。
 
 **確認:**
 - Railwayダッシュボード → Variables → `DATABASE_URL` が設定されているか
 - PostgreSQLサービスが追加されているか
 - PostgreSQLサービスが起動しているか
+- 接続文字列の形式が正しいか（`postgresql://`で始まる）
 
 **解決:**
 
-1. **PostgreSQLサービスを追加**
+1. **PostgreSQLサービスを追加（まだの場合）**
    - Railwayダッシュボード → プロジェクト
    - 「New」→ 「Database」→ 「Add PostgreSQL」
+
+2. **DATABASE_URL環境変数を設定**
+   - バックエンドサービス → Settings → Variables
+   - 変数名: `DATABASE_URL`
+   - 値: PostgreSQLサービスの接続文字列
+     - 例: `postgresql://postgres:password@host:port/database`
+     - または: `${{Postgres.DATABASE_URL}}` (PostgreSQLサービス名に合わせて調整)
+   - **重要**: 接続文字列全体をコピー＆ペースト（前後の空白がないことを確認）
+
+3. **接続文字列の形式を確認**
+   ```
+   postgresql://[ユーザー名]:[パスワード]@[ホスト]:[ポート]/[データベース名]
+   ```
+   - `postgres://`で始まる場合は、`postgresql://`に自動変換されます
+   - SSL接続が必要な場合、`config.py`で`sslmode=require`が設定されています
+
+4. **SSL接続エラーの場合**
+   - `config.py`の`SQLALCHEMY_ENGINE_OPTIONS`で`sslmode: 'require'`が設定されていることを確認
+   - RailwayのPostgreSQLは通常SSL接続が必要です
+
+5. **認証エラーの場合**
+   - 接続文字列のパスワードが正しいか確認
+   - PostgreSQLサービスのVariablesでパスワードを確認
+
+6. **再デプロイ**
+   - 環境変数を設定後、サービスを再デプロイ
    - これにより、`DATABASE_URL`が自動的に設定されます
 
 2. **環境変数を確認**

@@ -24,6 +24,27 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 # Register routes
 register_routes(app, socketio)
 
+# ルートパスのエンドポイント
+@app.route('/', methods=['GET'])
+def root():
+    """ルートパス - API情報を返す"""
+    return jsonify({
+        'service': 'poke-sup-backend',
+        'version': '1.0.0',
+        'status': 'running',
+        'endpoints': {
+            'health': '/api/health',
+            'auth': '/api/auth',
+            'conversations': '/api/conversations',
+            'messages': '/api/messages',
+            'health_data': '/api/health-data',
+            'reminders': '/api/reminders',
+            'users': '/api/users',
+            'health_goals': '/api/health-goals'
+        },
+        'documentation': 'See API_DOCUMENTATION.md for details'
+    }), 200
+
 # エラーハンドラー
 @app.errorhandler(404)
 def not_found(error):
@@ -64,26 +85,64 @@ if __name__ == '__main__':
         database_connected = False
         with app.app_context():
             try:
-                # データベース接続をテスト
+                # データベース接続文字列の検証
+                database_url = os.environ.get('DATABASE_URL', DATABASE_URL_NOT_SET)
+                if database_url and database_url != DATABASE_URL_NOT_SET:
+                    # 接続文字列の基本情報をログに記録（機密情報は除く）
+                    try:
+                        if '@' in database_url:
+                            parts = database_url.split('@')
+                            if len(parts) == 2:
+                                host_part = parts[1].split('/')[0]
+                                db_name = parts[1].split('/')[1] if '/' in parts[1] else 'unknown'
+                                log_info(
+                                    "Attempting database connection",
+                                    host=host_part,
+                                    database=db_name,
+                                    url_configured=True
+                                )
+                    except Exception:
+                        pass
+                
+                # データベース接続をテスト（タイムアウト付き）
+                log_info("Testing database connection...")
                 db.session.execute(db.text('SELECT 1'))
+                log_info("Database connection successful")
+                
+                # テーブルを作成
+                log_info("Creating database tables...")
                 db.create_all()
                 database_connected = True
-                log_info("Database tables created/verified")
+                log_info("Database tables created/verified", status="success")
             except Exception as e:
                 database_url = os.environ.get('DATABASE_URL', DATABASE_URL_NOT_SET)
-                is_connection_error = 'Connection refused' in str(e) or 'OperationalError' in str(type(e).__name__)
+                error_type_name = type(e).__name__
+                error_msg = str(e)
+                
+                # 接続エラーの種類を判定
+                is_connection_error = (
+                    'Connection refused' in error_msg or 
+                    'OperationalError' in error_type_name or
+                    'timeout' in error_msg.lower() or
+                    'could not connect' in error_msg.lower() or
+                    'connection' in error_msg.lower()
+                )
+                is_ssl_error = 'ssl' in error_msg.lower() or 'SSL' in error_msg
+                is_auth_error = 'password' in error_msg.lower() or 'authentication' in error_msg.lower()
                 
                 # エラーの詳細をログに記録
-                error_msg = str(e)
-                if len(error_msg) > 300:
-                    error_msg = error_msg[:300] + "..."
+                if len(error_msg) > 500:
+                    error_msg = error_msg[:500] + "..."
                 
                 log_error(
                     "Failed to create database tables",
-                    error_type=type(e).__name__,
+                    error_type=error_type_name,
                     error_message=error_msg,
                     database_url_configured=bool(database_url and database_url != DATABASE_URL_NOT_SET),
-                    is_connection_error=is_connection_error
+                    is_connection_error=is_connection_error,
+                    is_ssl_error=is_ssl_error,
+                    is_auth_error=is_auth_error,
+                    traceback=True
                 )
                 
                 # データベース接続エラーの場合は、解決方法を明確に表示
@@ -95,38 +154,65 @@ if __name__ == '__main__':
                     print("", file=sys.stderr)
                     print("The application cannot connect to the database.", file=sys.stderr)
                     print("", file=sys.stderr)
+                    
+                    # エラーの種類に応じた解決方法を表示
+                    if is_ssl_error:
+                        print("⚠️  SSL接続エラーが検出されました", file=sys.stderr)
+                        print("   config.pyでSSL設定が正しく適用されているか確認してください。", file=sys.stderr)
+                        print("", file=sys.stderr)
+                    elif is_auth_error:
+                        print("⚠️  認証エラーが検出されました", file=sys.stderr)
+                        print("   接続文字列のパスワードが正しいか確認してください。", file=sys.stderr)
+                        print("", file=sys.stderr)
+                    
                     print("SOLUTION:", file=sys.stderr)
-                    print("1. Go to Railway dashboard: https://railway.app", file=sys.stderr)
-                    print("2. Select your project", file=sys.stderr)
-                    print("3. Click 'New' -> 'Database' -> 'Add PostgreSQL'", file=sys.stderr)
-                    print("4. Go to your backend service -> Variables", file=sys.stderr)
-                    print("5. Ensure DATABASE_URL=${{Postgres.DATABASE_URL}} is set", file=sys.stderr)
-                    print("   (Replace 'Postgres' with your PostgreSQL service name if different)", file=sys.stderr)
+                    print("", file=sys.stderr)
+                    print("1. Railwayダッシュボードにアクセス: https://railway.app", file=sys.stderr)
+                    print("2. プロジェクトを選択", file=sys.stderr)
+                    print("3. バックエンドサービス → Settings → Variables", file=sys.stderr)
+                    print("4. DATABASE_URL環境変数を確認・設定:", file=sys.stderr)
+                    print("   - 変数名: DATABASE_URL", file=sys.stderr)
+                    print("   - 値: PostgreSQLサービスの接続文字列", file=sys.stderr)
+                    print("   - または: ${{Postgres.DATABASE_URL}} (PostgreSQLサービス名に合わせて調整)", file=sys.stderr)
+                    print("", file=sys.stderr)
+                    print("5. 接続文字列の形式を確認:", file=sys.stderr)
+                    print("   postgresql://[ユーザー名]:[パスワード]@[ホスト]:[ポート]/[データベース名]", file=sys.stderr)
+                    print("", file=sys.stderr)
+                    print("6. 環境変数を保存後、サービスを再デプロイ", file=sys.stderr)
                     print("", file=sys.stderr)
                     print("Current DATABASE_URL status:", file=sys.stderr)
                     if database_url == DATABASE_URL_NOT_SET:
                         print("  ❌ DATABASE_URL is NOT SET", file=sys.stderr)
+                        print("  → Railwayダッシュボードで環境変数を設定してください", file=sys.stderr)
                     else:
                         print("  ⚠️  DATABASE_URL is set but connection failed", file=sys.stderr)
-                        # ホスト情報のみ表示（機密情報を除く）
+                        # 接続文字列の詳細情報を表示（機密情報は除く）
                         try:
                             if '@' in database_url:
                                 host_part = database_url.split('@')[1].split('/')[0]
+                                db_name = database_url.split('/')[-1] if '/' in database_url else 'unknown'
                                 print(f"  Connection target: {host_part}", file=sys.stderr)
-                        except Exception:
-                            pass
+                                print(f"  Database name: {db_name}", file=sys.stderr)
+                                # 接続文字列の形式を検証
+                                if not database_url.startswith('postgresql://'):
+                                    print("  ⚠️  Warning: Connection string should start with 'postgresql://'", file=sys.stderr)
+                        except Exception as parse_error:
+                            print(f"  ⚠️  Could not parse connection string: {parse_error}", file=sys.stderr)
                     print("", file=sys.stderr)
                     print(separator, file=sys.stderr)
                     print("", file=sys.stderr)
                     
                     log_error(
                         "Database connection failed",
-                        action_required="Add PostgreSQL service in Railway",
+                        action_required="Configure DATABASE_URL in Railway",
+                        error_category="connection" if not is_ssl_error and not is_auth_error else ("ssl" if is_ssl_error else "authentication"),
                         steps=[
-                            "1. Railway dashboard -> Project -> New -> Database -> Add PostgreSQL",
-                            "2. Backend service -> Variables -> Set DATABASE_URL=${{Postgres.DATABASE_URL}}",
-                            "3. Redeploy the backend service"
-                        ]
+                            "1. Railway dashboard -> Backend service -> Settings -> Variables",
+                            "2. Set DATABASE_URL to PostgreSQL connection string",
+                            "3. Verify connection string format: postgresql://user:pass@host:port/dbname",
+                            "4. Redeploy the backend service"
+                        ],
+                        traceback=True
                     )
                     
                     # データベース接続エラーでもアプリケーションは起動を続行（警告のみ）
