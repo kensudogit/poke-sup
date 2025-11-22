@@ -5,8 +5,8 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002',
   },
   // 静的エクスポート用設定（Flaskで配信する場合）
-  // output: 'export', // コメントアウト（Next.jsサーバーで実行する場合は不要）
-  // trailingSlash: true, // オプション：URLの末尾にスラッシュを追加
+  output: 'export', // 静的エクスポートを有効化
+  trailingSlash: true, // URLの末尾にスラッシュを追加
   // Vercelデプロイ用設定
   images: {
     domains: [],
