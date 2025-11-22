@@ -55,11 +55,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               height={32}
               className="object-cover w-full h-full relative z-10"
               style={{
-                filter: 'brightness(1.1) saturate(1.2) contrast(1.1)',
+                filter: 'brightness(1.15) saturate(1.4) contrast(1.3)',
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-full blur-sm -z-0"></div>
-            <div className="absolute inset-0 bg-gradient-to-br from-primary-400/30 to-secondary-400/30 mix-blend-multiply rounded-full"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-secondary-500/10 rounded-full blur-sm -z-0"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-400/15 to-secondary-400/15 mix-blend-multiply rounded-full"></div>
           </div>
           <h1 className="text-xl font-bold text-gray-900">ポケさぽ</h1>
         </div>
@@ -89,11 +89,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     height={40}
                     className="object-cover w-full h-full relative z-10"
                     style={{
-                      filter: 'brightness(1.1) saturate(1.2) contrast(1.1)',
+                      filter: 'brightness(1.15) saturate(1.4) contrast(1.3)',
                     }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-full blur-sm -z-0"></div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-400/30 to-secondary-400/30 mix-blend-multiply rounded-full"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-secondary-500/10 rounded-full blur-sm -z-0"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-400/15 to-secondary-400/15 mix-blend-multiply rounded-full"></div>
                 </div>
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                   ポケさぽ
