@@ -101,7 +101,8 @@ export default function LoginPage() {
               <input
                 {...register('email')}
                 type="email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                disabled={loading}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="example@email.com"
               />
               {errors.email && (
@@ -110,28 +111,39 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password-input" className="block text-sm font-medium text-gray-700 mb-2">
                 <Lock className="inline w-4 h-4 mr-2" />
                 パスワード
               </label>
               <div className="relative">
                 <input
-                  {...register('password')}
+                  id="password-input"
+                  {...register('password', {
+                    required: true,
+                    minLength: 6,
+                  })}
                   type={showPassword ? 'text' : 'password'}
                   autoComplete={isRegistering ? 'new-password' : 'current-password'}
-                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                  disabled={loading}
+                  readOnly={false}
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed bg-white"
                   placeholder={isRegistering ? '6文字以上で入力してください' : '••••••••'}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setShowPassword(!showPassword)
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors z-10 p-1 cursor-pointer"
                   aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+                  tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
+                    <EyeOff className="w-5 h-5 pointer-events-none" />
                   ) : (
-                    <Eye className="w-5 h-5" />
+                    <Eye className="w-5 h-5 pointer-events-none" />
                   )}
                 </button>
               </div>
