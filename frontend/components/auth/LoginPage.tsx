@@ -118,16 +118,32 @@ export default function LoginPage() {
         })
         
         // トークンを先に設定（確実に保存）
+        // localStorageに直接保存（同期的に）
+        try {
+          localStorage.setItem('access_token', token)
+          console.log('Token saved to localStorage directly')
+        } catch (e) {
+          console.error('Failed to save token to localStorage:', e)
+        }
+        
+        // Zustandの状態も更新
         setToken(token)
         
         // トークンが確実に保存されたことを確認（複数回試行）
         let savedToken = localStorage.getItem('access_token')
         let retryCount = 0
-        while (savedToken !== token && retryCount < 3) {
+        while (savedToken !== token && retryCount < 5) {
           console.warn(`Token mismatch after setting (attempt ${retryCount + 1}), retrying...`)
           localStorage.setItem('access_token', token)
+          // 少し待ってから再確認
+          await new Promise(resolve => setTimeout(resolve, 50))
           savedToken = localStorage.getItem('access_token')
           retryCount++
+        }
+        
+        if (savedToken !== token) {
+          console.error('Failed to save token after multiple attempts')
+          throw new Error('トークンの保存に失敗しました')
         }
         
         // ユーザー情報を設定（トークンが保存された後）
@@ -141,16 +157,20 @@ export default function LoginPage() {
           stateToken: !!stateToken,
           tokensMatch: verifiedToken === token && stateToken === token,
           userSet: !!response.data.user,
+          tokenLength: verifiedToken?.length,
         })
+        
+        // トークンが確実に保存されるまで少し待つ
+        await new Promise(resolve => setTimeout(resolve, 100))
         
         console.log('Token and user set, redirecting...')
         toast.success(isRegistering ? '登録に成功しました' : 'ログインに成功しました')
         
         // リダイレクト（状態の更新が完了してから）
-        requestAnimationFrame(() => {
+        setTimeout(() => {
           console.log('Navigating to dashboard')
           router.push('/dashboard')
-        })
+        }, 200)
       } else {
         throw new Error('Invalid response format')
       }

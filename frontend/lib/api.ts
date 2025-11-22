@@ -134,19 +134,22 @@ api.interceptors.request.use((config) => {
     } else if (trimmedToken) {
       config.headers.Authorization = trimmedToken
     }
-    // デバッグ用ログ（開発環境のみ）
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Adding token to request:', {
-        url: config.url,
-        hasToken: !!token,
-        tokenLength: token?.length,
-        tokenPrefix: token?.substring(0, 20),
-      })
-    }
+    // デバッグ用ログ（常に出力、本番環境でも確認できるように）
+    const authHeader = typeof config.headers.Authorization === 'string' 
+      ? config.headers.Authorization.substring(0, 30) + '...'
+      : String(config.headers.Authorization)
+    console.log('Adding token to request:', {
+      url: config.url,
+      hasToken: !!token,
+      tokenLength: token?.length,
+      tokenPrefix: token?.substring(0, 20),
+      authorizationHeader: authHeader,
+    })
   } else {
     console.warn('No token found in localStorage for request:', config.url, {
       hasAccessToken: !!localStorage.getItem('access_token'),
       hasAuthStorage: !!localStorage.getItem('auth-storage'),
+      url: config.url,
     })
   }
   return config
