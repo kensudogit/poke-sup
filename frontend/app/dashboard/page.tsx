@@ -68,15 +68,17 @@ export default function DashboardPage() {
     }
   }
 
-  // グローバルフラグでログアウトの重複を防ぐ
-  let globalLogoutDone = false
-  
+// グローバルフラグでログアウトの重複を防ぐ
+let globalLogoutDone = false
+let globalAuthCheckDone = false
+
   useEffect(() => {
     // マウント時のみ実行（無限ループを防ぐ）
-    if (hasCheckedAuth.current) {
+    if (hasCheckedAuth.current || globalAuthCheckDone) {
       return
     }
     hasCheckedAuth.current = true
+    globalAuthCheckDone = true
     
     // 認証状態とトークンの両方を確認（少し待ってから、トークンが保存される時間を確保）
     const checkAuth = () => {
@@ -119,12 +121,12 @@ export default function DashboardPage() {
           }
         }
         
-        // リダイレクト（少し待ってから実行）
+        // リダイレクト（少し待ってから実行、一度だけ）
         setTimeout(() => {
           if (globalThis.window && globalThis.window.location.pathname !== '/') {
             globalThis.window.location.href = '/'
           }
-        }, 200)
+        }, 300)
         return
       }
       
@@ -152,12 +154,12 @@ export default function DashboardPage() {
               }
             }, 500)
           }
-        }, 300)
+        }, 500)
       }
     }
     
     // 少し待ってからチェック（トークンが保存される時間を確保）
-    setTimeout(checkAuth, 500)
+    setTimeout(checkAuth, 1000)
     
     if (!hasFetchedStats.current) {
       hasFetchedStats.current = true
