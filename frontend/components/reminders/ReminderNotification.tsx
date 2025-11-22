@@ -25,15 +25,31 @@ export default function ReminderNotification() {
     // Check for upcoming reminders every minute
     const checkReminders = async () => {
       try {
-        const now = new Date()
-        const in5Minutes = new Date(now.getTime() + 5 * 60 * 1000)
-
-        // トークンを確認
-        const token = localStorage.getItem('access_token')
+        // トークンを確認（複数回試行）
+        let token = localStorage.getItem('access_token')
+        if (!token) {
+          // Zustandのストレージからも確認
+          try {
+            const authStorage = localStorage.getItem('auth-storage')
+            if (authStorage) {
+              const parsed = JSON.parse(authStorage)
+              token = parsed?.state?.accessToken
+              if (token && typeof token === 'string') {
+                localStorage.setItem('access_token', token)
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to parse auth-storage:', e)
+          }
+        }
+        
         if (!token) {
           console.warn('No token found, skipping reminder check')
           return
         }
+
+        const now = new Date()
+        const in5Minutes = new Date(now.getTime() + 5 * 60 * 1000)
 
         const response = await api.get('/reminders', {
           params: {
@@ -88,13 +104,18 @@ export default function ReminderNotification() {
       }
     }
 
-    // Check immediately
-    checkReminders()
+    // トークンが確実に保存されるまで少し待ってからチェック
+    const initialDelay = setTimeout(() => {
+      checkReminders()
+    }, 500) // 500ms待機
 
     // Check every minute
     const interval = setInterval(checkReminders, 60 * 1000)
 
-    return () => clearInterval(interval)
+    return () => {
+      clearTimeout(initialDelay)
+      clearInterval(interval)
+    }
   }, [user])
 
   return null

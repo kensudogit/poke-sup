@@ -102,8 +102,28 @@ export default function DashboardPage() {
     
     if (!hasFetchedStats.current) {
       hasFetchedStats.current = true
-      console.log('Authenticated, fetching stats')
-      fetchStats()
+      console.log('Authenticated, waiting for token to be saved before fetching stats')
+      // トークンが確実に保存されるまで少し待つ
+      setTimeout(() => {
+        const token = localStorage.getItem('access_token')
+        if (token) {
+          console.log('Token confirmed, fetching stats')
+          fetchStats()
+        } else {
+          console.warn('Token not found after delay, retrying...')
+          // もう一度試行
+          setTimeout(() => {
+            const retryToken = localStorage.getItem('access_token')
+            if (retryToken) {
+              console.log('Token found on retry, fetching stats')
+              fetchStats()
+            } else {
+              console.error('Token still not found, skipping stats fetch')
+              setLoading(false)
+            }
+          }, 500)
+        }
+      }, 300) // 300ms待機
     }
     // 依存配列を空にして、マウント時のみ実行
     // eslint-disable-next-line react-hooks/exhaustive-deps
