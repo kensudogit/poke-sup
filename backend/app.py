@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_jwt_extended import JWTManager
@@ -9,6 +9,8 @@ from utils.logging import log_info, log_error, log_warn
 import eventlet
 import os
 import sys
+import requests
+from urllib.parse import urljoin
 
 eventlet.monkey_patch()
 
@@ -24,26 +26,72 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 # Register routes
 register_routes(app, socketio)
 
-# ルートパスのエンドポイント
-@app.route('/', methods=['GET'])
-def root():
-    """ルートパス - API情報を返す"""
-    return jsonify({
-        'service': 'poke-sup-backend',
-        'version': '1.0.0',
-        'status': 'running',
-        'endpoints': {
-            'health': '/api/health',
-            'auth': '/api/auth',
-            'conversations': '/api/conversations',
-            'messages': '/api/messages',
-            'health_data': '/api/health-data',
-            'reminders': '/api/reminders',
-            'users': '/api/users',
-            'health_goals': '/api/health-goals'
-        },
-        'documentation': 'See API_DOCUMENTATION.md for details'
-    }), 200
+# Next.jsフロントエンドサーバーのURL
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+
+def proxy_to_frontend(path):
+    """Next.jsフロントエンドサーバーにリクエストをプロキシ"""
+    try:
+        frontend_url = urljoin(FRONTEND_URL, path)
+        # クエリパラメータも含める
+        if request.query_string:
+            frontend_url += '?' + request.query_string.decode('utf-8')
+        
+        # リクエストを転送
+        resp = requests.request(
+            method=request.method,
+            url=frontend_url,
+            headers={key: value for (key, value) in request.headers if key != 'Host'},
+            data=request.get_data(),
+            cookies=request.cookies,
+            allow_redirects=False,
+            timeout=10
+        )
+        
+        # レスポンスを返す
+        excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+        headers = [(name, value) for (name, value) in resp.raw.headers.items()
+                   if name.lower() not in excluded_headers]
+        
+        return Response(resp.content, resp.status_code, headers)
+    except requests.exceptions.RequestException as e:
+        log_error("Failed to proxy to frontend", error=e, path=path)
+        # フロントエンドが起動していない場合は、API情報を返す
+        if path == '/' or path == '':
+            return jsonify({
+                'service': 'poke-sup-backend',
+                'version': '1.0.0',
+                'status': 'running',
+                'frontend': 'not available',
+                'endpoints': {
+                    'health': '/api/health',
+                    'auth': '/api/auth',
+                    'conversations': '/api/conversations',
+                    'messages': '/api/messages',
+                    'health_data': '/api/health-data',
+                    'reminders': '/api/reminders',
+                    'users': '/api/users',
+                    'health_goals': '/api/health-goals'
+                },
+                'documentation': 'See API_DOCUMENTATION.md for details'
+            }), 200
+        return jsonify({'error': 'Frontend not available'}), 503
+
+# ルートパスとAPI以外のパスをフロントエンドにプロキシ
+# 注意: このルートは最後に定義する必要があります（APIルートの後に）
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
+@app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
+def catch_all(path):
+    """API以外のリクエストをフロントエンドにプロキシ"""
+    # APIパスは除外（既に登録されたルートで処理される）
+    if path.startswith('api/'):
+        # ここに到達した場合、APIルートが見つからなかったことを意味する
+        log_warn("API endpoint not found", path=request.path)
+        return jsonify({'error': 'API endpoint not found'}), 404
+    
+    # 静的ファイル（_next, favicon.icoなど）もフロントエンドにプロキシ
+    # フロントエンドにプロキシ
+    return proxy_to_frontend(path)
 
 # エラーハンドラー
 @app.errorhandler(404)

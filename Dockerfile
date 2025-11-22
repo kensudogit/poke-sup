@@ -60,12 +60,42 @@ ENV PYTHONPATH=/app
 # ポートを公開（バックエンド用）
 EXPOSE 5000
 
-# 起動スクリプトを作成
+# 起動スクリプトを作成（バックエンドとフロントエンドを同時に起動）
 RUN echo '#!/bin/bash\n\
-cd /app/backend && python app.py &\n\
-cd /app/frontend && npm start &\n\
-wait\n\
+set -e\n\
+\n\
+# フロントエンドをバックグラウンドで起動\n\
+echo "Starting frontend..."\n\
+cd /app/frontend\n\
+npm start > /tmp/frontend.log 2>&1 &\n\
+FRONTEND_PID=$!\n\
+echo "Frontend started with PID: $FRONTEND_PID"\n\
+\n\
+# フロントエンドの起動を待つ（最大30秒）\n\
+echo "Waiting for frontend to be ready..."\n\
+for i in {1..30}; do\n\
+  if curl -s http://localhost:3000 > /dev/null 2>&1; then\n\
+    echo "Frontend is ready!"\n\
+    break\n\
+  fi\n\
+  if [ $i -eq 30 ]; then\n\
+    echo "Warning: Frontend did not start within 30 seconds"\n\
+    echo "Frontend logs:"\n\
+    tail -20 /tmp/frontend.log || true\n\
+  fi\n\
+  sleep 1\n\
+done\n\
+\n\
+# バックエンドを起動（フォアグラウンド）\n\
+echo "Starting backend..."\n\
+cd /app/backend\n\
+python app.py\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
-# バックエンドのみ起動（フロントエンドは別サービス推奨）
-CMD ["python", "backend/app.py"]
+# curlをインストール（ヘルスチェック用）
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 統合起動スクリプトを使用
+CMD ["/app/start.sh"]
