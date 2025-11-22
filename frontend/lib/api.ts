@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
       const authStorage = localStorage.getItem('auth-storage')
       if (authStorage) {
         const parsed = JSON.parse(authStorage)
-        if (parsed?.state?.accessToken) {
+        if (parsed?.state?.accessToken && typeof parsed.state.accessToken === 'string') {
           token = parsed.state.accessToken
           // localStorageにも保存（確実に保存するため、複数回試行）
           try {
