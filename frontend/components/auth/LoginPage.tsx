@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const hasRedirected = useRef(false)
 
   const {
     register,
@@ -171,16 +172,28 @@ export default function LoginPage() {
         })
         
         // トークンが確実に保存されるまで少し待つ
-        await new Promise(resolve => setTimeout(resolve, 100))
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+        // リダイレクトフラグをチェック（重複を防ぐ）
+        if (hasRedirected.current) {
+          console.log('Redirect already initiated, skipping')
+          return
+        }
+        hasRedirected.current = true
         
         console.log('Token and user set, redirecting...')
         toast.success(isRegistering ? '登録に成功しました' : 'ログインに成功しました')
         
-        // リダイレクト（状態の更新が完了してから）
+        // リダイレクト（一度だけ実行、window.locationを使用して確実に）
         setTimeout(() => {
           console.log('Navigating to dashboard')
-          router.push('/dashboard')
-        }, 200)
+          // router.pushの代わりにwindow.locationを使用（確実にリダイレクト）
+          if (globalThis.window) {
+            globalThis.window.location.href = '/dashboard'
+          } else {
+            router.push('/dashboard')
+          }
+        }, 300)
       } else {
         throw new Error('Invalid response format')
       }
