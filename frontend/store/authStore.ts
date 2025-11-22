@@ -35,28 +35,25 @@ export const useAuthStore = create<AuthState>()(
       setToken: (token) => {
         console.log('Setting token', { tokenLength: token?.length, tokenPrefix: token?.substring(0, 20) })
         
-        // まずzustandの状態を更新
-        const state = get()
-        set({ accessToken: token, isAuthenticated: !!state.user || !!token })
-        
-        // その後、localStorageに確実に保存（非同期で実行される可能性があるため、少し待つ）
+        // localStorageに先に保存（同期的に）
         try {
           localStorage.setItem('access_token', token)
           console.log('Token saved to localStorage')
-          
-          // 保存を確認（少し待ってから確認）
-          setTimeout(() => {
-            const savedToken = localStorage.getItem('access_token')
-            if (savedToken !== token) {
-              console.warn('Token mismatch detected, retrying save...')
-              localStorage.setItem('access_token', token)
-            }
-            console.log('Token verification:', { saved: !!savedToken, matches: savedToken === token })
-          }, 100)
         } catch (error) {
           console.error('Failed to save token to localStorage:', error)
-          // エラーが発生した場合でも、状態は更新されているので続行
         }
+        
+        // その後、zustandの状態を更新
+        const state = get()
+        set({ accessToken: token, isAuthenticated: !!state.user || !!token })
+        
+        // 保存を確認（同期的に）
+        const savedToken = localStorage.getItem('access_token')
+        if (savedToken !== token) {
+          console.warn('Token mismatch detected, retrying save...')
+          localStorage.setItem('access_token', token)
+        }
+        console.log('Token verification:', { saved: !!savedToken, matches: savedToken === token })
       },
       logout: () => {
         console.log('Logging out')
@@ -90,6 +87,11 @@ export const useAuthStore = create<AuthState>()(
         let finalToken = state.accessToken || token
         let finalIsAuthenticated = false
         
+        // 状態が変更されていない場合は、何も返さない（無限ループを防ぐ）
+        if (!finalToken && !state.isAuthenticated) {
+          return
+        }
+        
         if (finalToken) {
           // localStorageにトークンがあるが、stateにない場合は同期
           if (token && !state.accessToken) {
@@ -102,6 +104,7 @@ export const useAuthStore = create<AuthState>()(
             console.log('Syncing token from state to localStorage')
             try {
               localStorage.setItem('access_token', state.accessToken)
+              finalToken = state.accessToken
             } catch (error) {
               console.error('Failed to save token to localStorage during rehydration:', error)
             }
@@ -109,13 +112,15 @@ export const useAuthStore = create<AuthState>()(
           
           finalIsAuthenticated = true
           console.log('Rehydrated with token, setting authenticated')
-        }
-        
-        // 状態を更新して返す（これによりzustandの状態が更新される）
-        return {
-          ...state,
-          accessToken: finalToken,
-          isAuthenticated: finalIsAuthenticated,
+          
+          // 状態が実際に変更された場合のみ更新を返す
+          if (state.accessToken !== finalToken || state.isAuthenticated !== finalIsAuthenticated) {
+            return {
+              ...state,
+              accessToken: finalToken,
+              isAuthenticated: finalIsAuthenticated,
+            }
+          }
         }
       },
     }
