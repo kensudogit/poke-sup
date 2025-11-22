@@ -13,7 +13,24 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    // トークンが正しい形式か確認
+    const trimmedToken = token.trim()
+    if (trimmedToken && !trimmedToken.startsWith('Bearer ')) {
+      config.headers.Authorization = `Bearer ${trimmedToken}`
+    } else if (trimmedToken) {
+      config.headers.Authorization = trimmedToken
+    }
+    // デバッグ用ログ（開発環境のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Adding token to request:', {
+        url: config.url,
+        hasToken: !!token,
+        tokenLength: token?.length,
+        tokenPrefix: token?.substring(0, 20),
+      })
+    }
+  } else {
+    console.warn('No token found in localStorage for request:', config.url)
   }
   return config
 })

@@ -149,8 +149,20 @@ def expired_token_callback(jwt_header, jwt_payload):
 
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
-    log_warn("Invalid JWT token", path=request.path, error=str(error))
-    return jsonify({'error': 'Invalid token', 'code': 'INVALID_TOKEN', 'details': str(error)}), 422
+    # Authorizationヘッダーを確認
+    auth_header = request.headers.get('Authorization', '')
+    log_warn("Invalid JWT token", 
+             path=request.path, 
+             error=str(error),
+             error_type=type(error).__name__,
+             has_auth_header=bool(auth_header),
+             auth_header_prefix=auth_header[:20] if auth_header else None)
+    return jsonify({
+        'error': 'Invalid token', 
+        'code': 'INVALID_TOKEN', 
+        'details': str(error),
+        'path': request.path
+    }), 401  # 401 Unauthorizedに変更（422ではなく）
 
 @jwt.unauthorized_loader
 def missing_token_callback(error):
@@ -165,11 +177,30 @@ def not_found(error):
 
 @app.errorhandler(422)
 def unprocessable_entity(error):
-    log_warn("Unprocessable entity", path=request.path, error=str(error), error_type=type(error).__name__)
+    # Authorizationヘッダーを確認
+    auth_header = request.headers.get('Authorization', '')
+    log_warn("Unprocessable entity (422)", 
+             path=request.path, 
+             method=request.method,
+             error=str(error), 
+             error_type=type(error).__name__,
+             has_auth_header=bool(auth_header),
+             auth_header_prefix=auth_header[:30] if auth_header else None,
+             query_string=request.query_string.decode('utf-8') if request.query_string else None)
     # JWT関連のエラーかどうかを確認
     if isinstance(error, (JWTDecodeError, NoAuthorizationError)):
-        return jsonify({'error': 'JWT authentication failed', 'details': str(error)}), 422
-    return jsonify({'error': 'Unprocessable entity', 'details': str(error)}), 422
+        return jsonify({
+            'error': 'JWT authentication failed', 
+            'code': 'JWT_ERROR',
+            'details': str(error),
+            'path': request.path
+        }), 422
+    return jsonify({
+        'error': 'Unprocessable entity', 
+        'code': 'VALIDATION_ERROR',
+        'details': str(error),
+        'path': request.path
+    }), 422
 
 @app.errorhandler(500)
 def internal_error(error):

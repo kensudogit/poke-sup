@@ -28,6 +28,13 @@ export default function ReminderNotification() {
         const now = new Date()
         const in5Minutes = new Date(now.getTime() + 5 * 60 * 1000)
 
+        // トークンを確認
+        const token = localStorage.getItem('access_token')
+        if (!token) {
+          console.warn('No token found, skipping reminder check')
+          return
+        }
+
         const response = await api.get('/reminders', {
           params: {
             is_completed: 'false',
@@ -59,10 +66,23 @@ export default function ReminderNotification() {
             status: error.response.status,
             data: error.response.data,
             url: error.config?.url,
+            baseURL: error.config?.baseURL,
             params: error.config?.params,
+            headers: error.config?.headers,
+            error_message: error.message,
+            error_code: error.code,
           })
+          // エラーレスポンスの詳細を表示
+          if (error.response.data) {
+            console.error('Error response data:', JSON.stringify(error.response.data, null, 2))
+          }
         } else {
-          console.error('Failed to check reminders:', error)
+          console.error('Failed to check reminders:', {
+            error,
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+          })
         }
         // エラーが発生してもアプリケーションを続行
       }

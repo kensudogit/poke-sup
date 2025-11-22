@@ -50,8 +50,16 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         // ストレージから復元された後、トークンがある場合は認証済みとみなす
-        if (state?.accessToken) {
-          console.log('Rehydrated with token, setting authenticated')
+        const token = localStorage.getItem('access_token')
+        if (state?.accessToken || token) {
+          console.log('Rehydrated with token, setting authenticated', {
+            hasStateToken: !!state?.accessToken,
+            hasLocalStorageToken: !!token,
+          })
+          if (token && !state?.accessToken) {
+            // localStorageにトークンがあるが、stateにない場合は同期
+            state.accessToken = token
+          }
           state.isAuthenticated = true
         }
       },
