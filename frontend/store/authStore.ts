@@ -29,8 +29,8 @@ export const useAuthStore = create<AuthState>()(
         console.log('Setting user:', user)
         const state = get()
         // トークンがある場合は認証済みとみなす
-        const isAuth = !!state.accessToken || !!localStorage.getItem('access_token')
-        set({ user, isAuthenticated: isAuth || true })
+        const isAuth = !!(state.accessToken || localStorage.getItem('access_token'))
+        set({ user, isAuthenticated: isAuth })
       },
       setToken: (token) => {
         console.log('Setting token', { tokenLength: token?.length, tokenPrefix: token?.substring(0, 20) })
@@ -110,8 +110,13 @@ export const useAuthStore = create<AuthState>()(
             }
           }
           
-          finalIsAuthenticated = true
-          console.log('Rehydrated with token, setting authenticated')
+          // トークンとユーザーの両方が存在する場合のみ認証済みとみなす
+          finalIsAuthenticated = !!(finalToken && state.user)
+          console.log('Rehydrated with token, setting authenticated', { 
+            hasToken: !!finalToken, 
+            hasUser: !!state.user, 
+            isAuthenticated: finalIsAuthenticated 
+          })
           
           // 状態が実際に変更された場合のみ更新を返す
           if (state.accessToken !== finalToken || state.isAuthenticated !== finalIsAuthenticated) {

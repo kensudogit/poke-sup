@@ -11,10 +11,11 @@ export default function Home() {
 
   useEffect(() => {
     console.log('Home page - isAuthenticated:', isAuthenticated, 'user:', user, 'token:', accessToken)
-    if (isAuthenticated && user) {
+    // 認証済みでユーザー情報がある場合のみリダイレクト
+    // 現在のパスを確認して、既にリダイレクト中でないことを確認
+    if (isAuthenticated && user && accessToken) {
       console.log('Already authenticated, redirecting to dashboard')
       router.push('/dashboard')
-      router.refresh()
     }
   }, [isAuthenticated, user, accessToken, router])
 

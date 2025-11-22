@@ -25,14 +25,16 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      console.log('Not authenticated, redirecting to login')
+    // 認証状態とトークンの両方を確認
+    const token = localStorage.getItem('access_token')
+    if (!isAuthenticated || !user || !token) {
+      console.log('Not authenticated, redirecting to login', { isAuthenticated, hasUser: !!user, hasToken: !!token })
       router.push('/')
       return
     }
     console.log('Authenticated, fetching stats')
     fetchStats()
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, user, router])
 
   const fetchStats = async () => {
     try {
