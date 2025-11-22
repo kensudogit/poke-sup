@@ -11,7 +11,36 @@ const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
+  // まずlocalStorageから取得を試みる
+  let token = localStorage.getItem('access_token')
+  
+  // localStorageにない場合は、zustandのストレージから取得を試みる
+  if (!token) {
+    try {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage)
+        if (parsed?.state?.accessToken) {
+          token = parsed.state.accessToken
+          // localStorageにも保存（確実に保存するため、複数回試行）
+          try {
+            localStorage.setItem('access_token', token)
+            console.log('Token synced from zustand storage to localStorage')
+          } catch (e) {
+            console.warn('Failed to save synced token to localStorage:', e)
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to parse auth-storage:', error)
+    }
+  }
+  
+  // トークンが見つからない場合、もう一度試行
+  if (!token) {
+    token = localStorage.getItem('access_token')
+  }
+  
   if (token) {
     // トークンが正しい形式か確認
     const trimmedToken = token.trim()
@@ -30,7 +59,10 @@ api.interceptors.request.use((config) => {
       })
     }
   } else {
-    console.warn('No token found in localStorage for request:', config.url)
+    console.warn('No token found in localStorage for request:', config.url, {
+      hasAccessToken: !!localStorage.getItem('access_token'),
+      hasAuthStorage: !!localStorage.getItem('auth-storage'),
+    })
   }
   return config
 })
