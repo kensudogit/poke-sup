@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
-import { Heart, Mail, Lock, LogIn } from 'lucide-react'
+import { Heart, Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react'
 import { toast } from '@/components/common/Toast'
 
 const loginSchema = z.object({
@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -113,14 +114,32 @@ export default function LoginPage() {
                 <Lock className="inline w-4 h-4 mr-2" />
                 パスワード
               </label>
-              <input
-                {...register('password')}
-                type="password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  {...register('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={isRegistering ? 'new-password' : 'current-password'}
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                  placeholder={isRegistering ? '6文字以上で入力してください' : '••••••••'}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                  aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              )}
+              {isRegistering && (
+                <p className="mt-1 text-xs text-gray-500">パスワードは6文字以上で入力してください</p>
               )}
             </div>
 
