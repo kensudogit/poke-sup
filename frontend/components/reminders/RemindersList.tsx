@@ -44,12 +44,26 @@ export default function RemindersList() {
   const fetchReminders = async () => {
     try {
       const response = await api.get('/reminders', {
-        params: { upcoming_only: 'true', is_completed: 'false' },
+        params: { 
+          upcoming_only: 'true', 
+          is_completed: 'false' 
+        },
       })
-      setReminders(response.data)
-      setFilteredReminders(response.data)
-    } catch (error) {
+      setReminders(response.data || [])
+      setFilteredReminders(response.data || [])
+    } catch (error: any) {
       console.error('Failed to fetch reminders:', error)
+      if (error.response?.status === 422) {
+        console.error('422 Unprocessable Entity:', {
+          status: error.response.status,
+          data: error.response.data,
+          url: error.config?.url,
+          params: error.config?.params,
+        })
+      }
+      // エラーが発生しても空配列を設定
+      setReminders([])
+      setFilteredReminders([])
     } finally {
       setLoading(false)
     }

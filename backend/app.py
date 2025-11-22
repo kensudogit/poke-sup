@@ -146,6 +146,11 @@ def not_found(error):
     log_warn("Resource not found", path=request.path)
     return jsonify({'error': 'Resource not found'}), 404
 
+@app.errorhandler(422)
+def unprocessable_entity(error):
+    log_warn("Unprocessable entity", path=request.path, error=str(error))
+    return jsonify({'error': 'Unprocessable entity', 'details': str(error)}), 422
+
 @app.errorhandler(500)
 def internal_error(error):
     log_error("Internal server error", error=error)

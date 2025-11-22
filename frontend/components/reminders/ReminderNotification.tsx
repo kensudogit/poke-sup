@@ -31,10 +31,11 @@ export default function ReminderNotification() {
         const response = await api.get('/reminders', {
           params: {
             is_completed: 'false',
+            upcoming_only: 'true',
           },
         })
 
-        const reminders: Reminder[] = response.data
+        const reminders: Reminder[] = response.data || []
 
         for (const reminder of reminders) {
           const scheduledAt = new Date(reminder.scheduled_at)
@@ -51,8 +52,19 @@ export default function ReminderNotification() {
             )
           }
         }
-      } catch (error) {
-        console.error('Failed to check reminders:', error)
+      } catch (error: any) {
+        // 422エラーなどの詳細をログに記録
+        if (error.response?.status === 422) {
+          console.error('Failed to check reminders (422 Unprocessable Entity):', {
+            status: error.response.status,
+            data: error.response.data,
+            url: error.config?.url,
+            params: error.config?.params,
+          })
+        } else {
+          console.error('Failed to check reminders:', error)
+        }
+        // エラーが発生してもアプリケーションを続行
       }
     }
 

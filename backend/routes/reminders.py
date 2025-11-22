@@ -3,28 +3,36 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models import Reminder, User
 from datetime import datetime
+from utils.logging import log_info, log_error, log_warn
 
 reminders_bp = Blueprint('reminders', __name__)
 
 @reminders_bp.route('', methods=['GET'])
 @jwt_required()
 def get_reminders():
-    user_id = get_jwt_identity()
-    is_completed = request.args.get('is_completed')
-    
-    query = Reminder.query.filter_by(user_id=user_id)
-    
-    if is_completed is not None:
-        query = query.filter_by(is_completed=is_completed.lower() == 'true')
-    
-    # Get upcoming reminders by default
-    upcoming_only = request.args.get('upcoming_only', 'false').lower() == 'true'
-    if upcoming_only:
-        query = query.filter(Reminder.scheduled_at >= datetime.utcnow())
-    
-    reminders = query.order_by(Reminder.scheduled_at).all()
-    
-    return jsonify([reminder.to_dict() for reminder in reminders]), 200
+    try:
+        user_id = get_jwt_identity()
+        is_completed = request.args.get('is_completed')
+        upcoming_only = request.args.get('upcoming_only', 'false')
+        
+        query = Reminder.query.filter_by(user_id=user_id)
+        
+        if is_completed is not None:
+            # 文字列をブール値に変換
+            is_completed_bool = is_completed.lower() in ('true', '1', 'yes')
+            query = query.filter_by(is_completed=is_completed_bool)
+        
+        # Get upcoming reminders
+        if upcoming_only.lower() in ('true', '1', 'yes'):
+            query = query.filter(Reminder.scheduled_at >= datetime.utcnow())
+        
+        reminders = query.order_by(Reminder.scheduled_at).all()
+        
+        return jsonify([reminder.to_dict() for reminder in reminders]), 200
+    except Exception as e:
+        from utils.logging import log_error
+        log_error("Get reminders failed", error=e, userId=user_id if 'user_id' in locals() else None)
+        return jsonify({'error': 'Failed to retrieve reminders', 'details': str(e)}), 500
 
 @reminders_bp.route('', methods=['POST'])
 @jwt_required()
