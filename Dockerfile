@@ -91,11 +91,6 @@ if ! kill -0 $FRONTEND_PID 2>/dev/null; then\n\
 else\n\
   echo "Frontend process is running (PID: $FRONTEND_PID)"\n\
   \n\
-  # 少し待ってからログを確認\n\
-  sleep 2\n\
-  echo "Initial frontend logs:"\n\
-  tail -20 /tmp/frontend.log || true\n\
-  \n\
   # フロントエンドの起動を待つ（最大60秒）\n\
   echo "==========================================="\n\
   echo "Waiting for frontend to be ready..."\n\
@@ -105,6 +100,10 @@ else\n\
     if curl -s -f http://localhost:3000 > /dev/null 2>&1; then\n\
       echo "✓ Frontend is ready! (after ${i} seconds)"\n\
       FRONTEND_READY=true\n\
+      # 起動確認後にログを表示\n\
+      sleep 1\n\
+      echo "Initial frontend logs:"\n\
+      tail -20 /tmp/frontend.log || true\n\
       break\n\
     fi\n\
     # プロセスがまだ生きているか確認\n\
