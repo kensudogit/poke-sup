@@ -261,7 +261,58 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ---
 
-### 5. メモリ不足エラー
+### 5. 依存関係が見つからないエラー
+
+**症状:**
+```
+ModuleNotFoundError: No module named 'flask'
+ModuleNotFoundError: No module named 'xxx'
+```
+
+**原因:**
+- Dockerfileで依存関係がインストールされていない
+- マルチステージビルドで依存関係が最終ステージにコピーされていない
+
+**解決方法:**
+
+#### ルートのDockerfileを使用する場合
+
+最終ステージで依存関係を再インストール：
+
+```dockerfile
+# ステージ3: 本番環境
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# バックエンドの依存関係をインストール
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+
+# バックエンドのコードをコピー
+COPY --from=backend /app/backend /app/backend
+```
+
+#### バックエンド専用サービスとしてデプロイする場合
+
+`backend/Dockerfile`を使用（既に正しく設定済み）：
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["python", "app.py"]
+```
+
+詳細は [RAILWAY_DEPENDENCIES_FIX.md](./RAILWAY_DEPENDENCIES_FIX.md) を参照してください。
+
+### 6. メモリ不足エラー
 
 **症状:**
 ```

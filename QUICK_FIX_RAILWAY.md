@@ -120,11 +120,29 @@ curl https://your-app.railway.app/api/health
 
 ---
 
+#### 原因5: 依存関係がインストールされていない
+
+**症状:**
+```
+ModuleNotFoundError: No module named 'flask'
+```
+
+**確認:**
+- Dockerfileで依存関係がインストールされているか
+- マルチステージビルドで依存関係が最終ステージにコピーされているか
+
+**解決:**
+- ルートのDockerfileを使用する場合、最終ステージで依存関係を再インストール
+- バックエンド専用サービスとしてデプロイする場合、`backend/Dockerfile`を使用
+
+詳細は [RAILWAY_DEPENDENCIES_FIX.md](./RAILWAY_DEPENDENCIES_FIX.md) を参照してください。
+
 ## 📚 詳細なトラブルシューティング
 
 - [RAILWAY_TROUBLESHOOTING.md](./RAILWAY_TROUBLESHOOTING.md) - 包括的なトラブルシューティングガイド
 - [RAILWAY_FIX_PATH.md](./RAILWAY_FIX_PATH.md) - パス設定の問題と解決方法
 - [RAILWAY_FRONTEND_SETUP.md](./RAILWAY_FRONTEND_SETUP.md) - フロントエンド（Next.js）の設定ガイド
+- [RAILWAY_DEPENDENCIES_FIX.md](./RAILWAY_DEPENDENCIES_FIX.md) - 依存関係エラーの修正方法
 
 ---
 

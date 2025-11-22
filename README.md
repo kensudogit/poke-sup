@@ -361,6 +361,22 @@ docker-compose exec backend python scripts/init_db.py
 # バックエンドAPI: http://localhost:5002
 ```
 
+### Railwayデプロイ後のURL確認
+
+Railwayにデプロイした場合のURL確認方法：
+
+1. **Railwayダッシュボード**
+   - https://railway.app にログイン
+   - プロジェクト → サービス → Settings → Networking
+   - **Public Domain** セクションにURLが表示されます
+
+2. **URLの形式**
+   ```
+   https://[サービス名]-[環境名].up.railway.app
+   ```
+
+詳細は [RAILWAY_URL_GUIDE.md](./RAILWAY_URL_GUIDE.md) を参照してください。
+
 ### 詳細なセットアップ
 
 詳細なセットアップ手順については、[SETUP.md](./SETUP.md) を参照してください。

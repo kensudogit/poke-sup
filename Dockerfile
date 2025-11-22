@@ -32,7 +32,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# バックエンドをコピー
+# バックエンドの依存関係をインストール
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+
+# バックエンドのコードをコピー
 COPY --from=backend /app/backend /app/backend
 
 # フロントエンドのビルド成果物をコピー
