@@ -6,6 +6,7 @@ import axios from 'axios'
 const getApiUrl = () => {
   // 環境変数が設定されている場合はそれを使用（優先）
   if (process.env.NEXT_PUBLIC_API_URL) {
+    console.log('Using NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
     return `${process.env.NEXT_PUBLIC_API_URL}/api`
   }
   
@@ -15,10 +16,17 @@ const getApiUrl = () => {
     const port = globalThis.window.location.port
     const origin = globalThis.window.location.origin
     
-    // Railway環境やその他の本番環境の検出（localhost以外、またはポートが3000以外）
-    // Railway環境では、hostnameがlocalhost以外になる
+    // ローカル開発環境の判定を厳密にする
+    // localhostまたは127.0.0.1で、かつポートが3000または3002の場合のみ
     const isLocalDev = (hostname === 'localhost' || hostname === '127.0.0.1') && 
                        (port === '3000' || port === '3002')
+    
+    console.log('Environment detection:', {
+      hostname,
+      port,
+      origin,
+      isLocalDev,
+    })
     
     if (isLocalDev) {
       // ローカル開発環境のみ、localhost:5002を使用
@@ -26,6 +34,7 @@ const getApiUrl = () => {
     }
     
     // Railway環境やその他の本番環境では、現在のオリジンを使用
+    console.log('Using origin for API URL:', `${origin}/api`)
     return `${origin}/api`
   }
   
@@ -44,13 +53,25 @@ const api = axios.create({
 })
 
 // デバッグ用: baseURLをログ出力（常に出力）
-console.log('API baseURL initialized:', baseURL, {
-  hostname: globalThis.window?.location.hostname,
-  port: globalThis.window?.location.port,
-  origin: globalThis.window?.location.origin,
-  env: process.env.NODE_ENV,
-  nextPublicApiUrl: process.env.NEXT_PUBLIC_API_URL,
-})
+if (globalThis.window !== undefined) {
+  const hostname = globalThis.window.location.hostname
+  const port = globalThis.window.location.port
+  const origin = globalThis.window.location.origin
+  const isLocalDev = (hostname === 'localhost' || hostname === '127.0.0.1') && 
+                     (port === '3000' || port === '3002')
+  
+  console.log('API baseURL initialized:', {
+    baseURL,
+    hostname,
+    port: port || '(empty)',
+    origin,
+    isLocalDev,
+    env: process.env.NODE_ENV,
+    nextPublicApiUrl: process.env.NEXT_PUBLIC_API_URL || '(not set)',
+  })
+} else {
+  console.log('API baseURL initialized (SSR):', baseURL)
+}
 
 // Add token to requests
 api.interceptors.request.use((config) => {
