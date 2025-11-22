@@ -20,11 +20,13 @@ api.interceptors.request.use((config) => {
       const authStorage = localStorage.getItem('auth-storage')
       if (authStorage) {
         const parsed = JSON.parse(authStorage)
-        if (parsed?.state?.accessToken && typeof parsed.state.accessToken === 'string') {
-          token = parsed.state.accessToken
+        const accessToken = parsed?.state?.accessToken
+        if (accessToken && typeof accessToken === 'string') {
+          token = accessToken
           // localStorageにも保存（確実に保存するため、複数回試行）
+          // accessTokenはstring型であることが保証されている
           try {
-            localStorage.setItem('access_token', token)
+            localStorage.setItem('access_token', accessToken)
             console.log('Token synced from zustand storage to localStorage')
           } catch (e) {
             console.warn('Failed to save synced token to localStorage:', e)
