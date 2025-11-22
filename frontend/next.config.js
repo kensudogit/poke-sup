@@ -9,6 +9,7 @@ const nextConfig = {
   // Vercelデプロイ用設定
   images: {
     domains: [],
+    unoptimized: false,
   },
   // 本番環境での最適化
   swcMinify: true,

@@ -54,6 +54,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               width={32}
               height={32}
               className="object-cover w-full h-full"
+              unoptimized
             />
           </div>
         </div>
@@ -82,6 +83,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     width={40}
                     height={40}
                     className="object-cover w-full h-full"
+                    unoptimized
                   />
                 </div>
               </div>
