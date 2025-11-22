@@ -148,3 +148,4 @@ password authentication failed
 
 *この手順で、データベース接続が正常に確立されるはずです。*
 
+

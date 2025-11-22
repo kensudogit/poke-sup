@@ -129,3 +129,4 @@ Warning: Frontend did not start within 30 seconds
 
 *この設定で、統合デプロイでもフロントエンドが正しく表示されるはずです。*
 
+

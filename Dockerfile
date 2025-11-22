@@ -52,6 +52,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # publicディレクトリを作成（Next.jsでは通常.nextにコピーされるため、必要に応じて作成）
+# フロントエンドにpublicディレクトリがある場合は、手動でコピーする必要があります
 RUN mkdir -p /app/frontend/public
 
 # 環境変数を設定

@@ -146,3 +146,4 @@ railway run python -c "from app import app; from extensions import db; app.app_c
 
 *この手順で、データベース接続が正常に確立されるはずです。*
 
+
