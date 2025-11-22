@@ -51,12 +51,14 @@ export default function CreateConversationModal({
 
   const fetchProviders = async () => {
     try {
-      // 実際の実装では、医療従事者のリストを取得するAPIエンドポイントが必要
-      // ここでは仮の実装
       const response = await api.get('/users?role=healthcare_provider')
       setProviders(response.data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch providers:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      // エラーが発生しても空配列を設定して続行
+      setProviders([])
     }
   }
 
@@ -71,14 +73,38 @@ export default function CreateConversationModal({
     setLoading(true)
 
     try {
-      await api.post('/conversations', {
+      console.log('Creating conversation:', {
         patient_id: user?.id,
         provider_id: data.provider_id,
       })
+      
+      const response = await api.post('/conversations', {
+        patient_id: user?.id,
+        provider_id: data.provider_id,
+      })
+      
+      console.log('Conversation created:', response.data)
       onSuccess()
       onClose()
     } catch (err: any) {
-      setError(err.response?.data?.error || '会話の作成に失敗しました')
+      console.error('Failed to create conversation:', err)
+      console.error('Error response:', err.response?.data)
+      console.error('Error status:', err.response?.status)
+      console.error('Error URL:', err.config?.url)
+      
+      let errorMessage = '会話の作成に失敗しました'
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error
+      } else if (err.response?.status === 404) {
+        errorMessage = 'APIエンドポイントが見つかりません。サーバーを確認してください。'
+      } else if (err.response?.status === 401) {
+        errorMessage = '認証が必要です。再度ログインしてください。'
+      } else if (err.response?.status === 400) {
+        errorMessage = err.response.data?.error || '入力内容に誤りがあります'
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

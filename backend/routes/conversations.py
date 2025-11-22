@@ -48,6 +48,8 @@ def create_conversation():
     user_id = get_jwt_identity()
     data = request.get_json()
     
+    log_info("Create conversation request received", userId=user_id, request_data=data)
+    
     patient_id = data.get('patient_id')
     provider_id = data.get('provider_id')
     

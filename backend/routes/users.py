@@ -14,10 +14,25 @@ def get_users():
     
     if role:
         try:
-            role_enum = UserRole[role.upper()]
+            # roleパラメータを正規化（healthcare_provider -> HEALTHCARE_PROVIDER）
+            role_normalized = role.upper().replace('-', '_')
+            # マッピング: healthcare_provider -> HEALTHCARE_PROVIDER
+            role_mapping = {
+                'HEALTHCARE_PROVIDER': UserRole.HEALTHCARE_PROVIDER,
+                'HEALTHCARE': UserRole.HEALTHCARE_PROVIDER,
+                'PROVIDER': UserRole.HEALTHCARE_PROVIDER,
+                'PATIENT': UserRole.PATIENT,
+                'ADMIN': UserRole.ADMIN,
+            }
+            
+            if role_normalized in role_mapping:
+                role_enum = role_mapping[role_normalized]
+            else:
+                role_enum = UserRole[role_normalized]
+            
             query = query.filter_by(role=role_enum)
         except KeyError:
-            return jsonify({'error': 'Invalid role'}), 400
+            return jsonify({'error': f'Invalid role: {role}'}), 400
     
     users = query.all()
     
