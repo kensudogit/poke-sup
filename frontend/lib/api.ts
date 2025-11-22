@@ -1,9 +1,24 @@
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002'
+// Railway環境では、フロントエンドとバックエンドが同じポートで動いているため、
+// 相対パスまたは現在のオリジンを使用します
+const getApiUrl = () => {
+  // 環境変数が設定されている場合はそれを使用
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return `${process.env.NEXT_PUBLIC_API_URL}/api`
+  }
+  
+  // ブラウザ環境では、現在のオリジンを使用（Railway環境で正しく動作）
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/api`
+  }
+  
+  // サーバーサイドレンダリング時はデフォルト値を使用
+  return 'http://localhost:5002/api'
+}
 
 const api = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: getApiUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
