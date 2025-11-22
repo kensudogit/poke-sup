@@ -5,9 +5,28 @@ import axios from 'axios'
 // Railway環境: 同じオリジン（window.location.origin）
 const getApiUrl = () => {
   // 環境変数が設定されている場合はそれを使用（優先）
+  // ただし、localhostを含む場合は、Railway環境では使用しない
   if (process.env.NEXT_PUBLIC_API_URL) {
-    console.log('Using NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
-    return `${process.env.NEXT_PUBLIC_API_URL}/api`
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    console.log('NEXT_PUBLIC_API_URL found:', apiUrl)
+    
+    // ブラウザ環境で、localhost以外のhostnameの場合、NEXT_PUBLIC_API_URLがlocalhostなら無視
+    if (globalThis.window !== undefined) {
+      const hostname = globalThis.window.location.hostname
+      const isLocalhostInEnv = apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')
+      const isProduction = hostname !== 'localhost' && hostname !== '127.0.0.1'
+      
+      if (isLocalhostInEnv && isProduction) {
+        console.warn('NEXT_PUBLIC_API_URL contains localhost but running in production, ignoring it')
+        // 環境変数を無視して、現在のオリジンを使用
+      } else {
+        console.log('Using NEXT_PUBLIC_API_URL:', apiUrl)
+        return `${apiUrl}/api`
+      }
+    } else {
+      // SSR時はそのまま使用
+      return `${apiUrl}/api`
+    }
   }
   
   // ブラウザ環境での判定
