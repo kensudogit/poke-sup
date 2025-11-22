@@ -172,7 +172,7 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            <p className="text-gray-600">患者と医療従事者のコミュニケーションプラットフォーム</p>
+            <p className="text-gray-600 text-xs sm:text-sm leading-tight">患者と医療従事者のコミュニケーションプラットフォーム</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
