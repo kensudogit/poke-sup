@@ -1,11 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/authStore'
-
-// グローバルフラグでログアウトの重複を防ぐ
-let globalLogoutDone = false
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import ConversationsList from '@/components/conversations/ConversationsList'
 import HealthDataDashboard from '@/components/health/HealthDataDashboard'
@@ -17,8 +13,7 @@ import { MessageSquare, Activity, Bell, Calendar } from 'lucide-react'
 import api from '@/lib/api'
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const { isAuthenticated, user } = useAuthStore()
+  const { user } = useAuthStore()
   const [stats, setStats] = useState({
     conversations: 0,
     healthData: 0,
@@ -27,22 +22,8 @@ export default function DashboardPage() {
   })
   const [loading, setLoading] = useState(true)
 
-  const hasCheckedAuth = useRef(false)
-  const hasFetchedStats = useRef(false)
-
   const fetchStats = async () => {
     try {
-      // 認証状態を再確認（APIリクエスト前に）
-      const token = localStorage.getItem('access_token')
-      const state = useAuthStore.getState()
-      const finalToken = state.accessToken || token
-      
-      if (!finalToken) {
-        console.warn('No token found, skipping stats fetch')
-        setLoading(false)
-        return
-      }
-      
       const [conversationsRes, healthDataRes, remindersRes] = await Promise.all([
         api.get('/conversations'),
         api.get('/health-data'),
@@ -59,140 +40,31 @@ export default function DashboardPage() {
       })
     } catch (error: any) {
       console.error('Failed to fetch stats:', error)
-      // 401エラーの場合は、リダイレクトはapi.tsのインターセプターで処理される
-      if (error.response?.status === 401) {
-        console.log('401 error in fetchStats, redirect will be handled by interceptor')
-      }
     } finally {
       setLoading(false)
     }
   }
 
-// グローバルフラグでログアウトの重複を防ぐ
-let globalLogoutDone = false
-let globalAuthCheckDone = false
-
   useEffect(() => {
-    // マウント時のみ実行（無限ループを防ぐ）
-    if (hasCheckedAuth.current || globalAuthCheckDone) {
-      return
-    }
-    hasCheckedAuth.current = true
-    globalAuthCheckDone = true
-    
-    // 認証状態とトークンの両方を確認（少し待ってから、トークンが保存される時間を確保）
-    const checkAuth = () => {
-      const token = localStorage.getItem('access_token')
-      
-      // Zustandのストレージからも確認
-      let stateToken = null
-      let stateUser = null
+    // デフォルトユーザーを設定（認証をパス）
+    const setDefaultUser = async () => {
       try {
-        const authStorage = localStorage.getItem('auth-storage')
-        if (authStorage) {
-          const parsed = JSON.parse(authStorage)
-          stateToken = parsed?.state?.accessToken
-          stateUser = parsed?.state?.user
+        // /auth/meエンドポイントからデフォルトユーザーを取得
+        const response = await api.get('/auth/me')
+        if (response.data) {
+          useAuthStore.getState().setUser(response.data)
+          useAuthStore.getState().setToken('dummy-token')
         }
-      } catch (e) {
-        console.warn('Failed to parse auth-storage:', e)
+      } catch (error) {
+        console.error('Failed to set default user:', error)
       }
-      
-      const finalToken = token || stateToken
-      const finalUser = stateUser
-      
-      if (!finalToken || !finalUser) {
-        console.log('Not authenticated, redirecting to login', { 
-          hasToken: !!finalToken,
-          hasUser: !!finalUser,
-          localStorageToken: !!token,
-          stateToken: !!stateToken,
-        })
-        
-        // ログアウト処理を一度だけ実行
-        if (!globalLogoutDone) {
-          globalLogoutDone = true
-          try {
-            localStorage.removeItem('access_token')
-            localStorage.removeItem('auth-storage')
-            useAuthStore.getState().logout()
-          } catch (e) {
-            console.warn('Failed to clear auth state:', e)
-          }
-        }
-        
-        // リダイレクト（少し待ってから実行、一度だけ）
-        setTimeout(() => {
-          if (globalThis.window && globalThis.window.location.pathname !== '/') {
-            globalThis.window.location.href = '/'
-          }
-        }, 300)
-        return
-      }
-      
-      // 認証済みの場合、統計を取得
-      if (!hasFetchedStats.current) {
-        hasFetchedStats.current = true
-        console.log('Authenticated, waiting for token to be saved before fetching stats')
-        // トークンが確実に保存されるまで少し待つ
-        setTimeout(() => {
-          const confirmedToken = localStorage.getItem('access_token')
-          if (confirmedToken) {
-            console.log('Token confirmed, fetching stats')
-            fetchStats()
-          } else {
-            console.warn('Token not found after delay, retrying...')
-            // もう一度試行
-            setTimeout(() => {
-              const retryToken = localStorage.getItem('access_token')
-              if (retryToken) {
-                console.log('Token found on retry, fetching stats')
-                fetchStats()
-              } else {
-                console.error('Token still not found, skipping stats fetch')
-                setLoading(false)
-              }
-            }, 500)
-          }
-        }, 500)
-      }
+      // 統計を取得
+      fetchStats()
     }
     
-    // 少し待ってからチェック（トークンが保存される時間を確保）
-    setTimeout(checkAuth, 1000)
-    
-    if (!hasFetchedStats.current) {
-      hasFetchedStats.current = true
-      console.log('Authenticated, waiting for token to be saved before fetching stats')
-      // トークンが確実に保存されるまで少し待つ
-      setTimeout(() => {
-        const token = localStorage.getItem('access_token')
-        if (token) {
-          console.log('Token confirmed, fetching stats')
-          fetchStats()
-        } else {
-          console.warn('Token not found after delay, retrying...')
-          // もう一度試行
-          setTimeout(() => {
-            const retryToken = localStorage.getItem('access_token')
-            if (retryToken) {
-              console.log('Token found on retry, fetching stats')
-              fetchStats()
-            } else {
-              console.error('Token still not found, skipping stats fetch')
-              setLoading(false)
-            }
-          }, 500)
-        }
-      }, 300) // 300ms待機
-    }
-    // 依存配列を空にして、マウント時のみ実行
+    setDefaultUser()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  if (!isAuthenticated) {
-    return null
-  }
 
   return (
     <DashboardLayout>
@@ -201,7 +73,7 @@ let globalAuthCheckDone = false
         
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">ダッシュボード</h1>
-          <p className="text-gray-600">ようこそ、{user?.name}さん</p>
+          <p className="text-gray-600">ようこそ、{user?.name || 'ユーザー'}さん</p>
         </div>
 
         {!loading && (

@@ -1,15 +1,14 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models import Conversation, User, UserRole
 from utils.logging import log_info, log_error, log_warn
+from utils import get_default_user_id
 
 conversations_bp = Blueprint('conversations', __name__)
 
 @conversations_bp.route('', methods=['GET'])
-@jwt_required()
 def get_conversations():
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     user = User.query.get(user_id)
     
     if not user:
@@ -43,9 +42,8 @@ def get_conversations():
         return jsonify({'error': 'Failed to retrieve conversations'}), 500
 
 @conversations_bp.route('', methods=['POST'])
-@jwt_required()
 def create_conversation():
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     data = request.get_json()
     
     log_info("Create conversation request received", userId=user_id, request_data=data)
@@ -101,9 +99,8 @@ def create_conversation():
         return jsonify({'error': 'Failed to create conversation'}), 500
 
 @conversations_bp.route('/<int:conversation_id>', methods=['GET'])
-@jwt_required()
 def get_conversation(conversation_id):
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     conversation = Conversation.query.get(conversation_id)
     
     if not conversation:

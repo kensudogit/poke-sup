@@ -1,15 +1,14 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models import HealthData, User
 from datetime import datetime
+from utils import get_default_user_id
 
 health_data_bp = Blueprint('health_data', __name__)
 
 @health_data_bp.route('', methods=['GET'])
-@jwt_required()
 def get_health_data():
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     data_type = request.args.get('data_type')
     
     query = HealthData.query.filter_by(user_id=user_id)
@@ -31,9 +30,8 @@ def get_health_data():
     return jsonify([data.to_dict() for data in health_data]), 200
 
 @health_data_bp.route('', methods=['POST'])
-@jwt_required()
 def create_health_data():
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     data = request.get_json()
     
     required_fields = ['data_type', 'value']
@@ -55,9 +53,8 @@ def create_health_data():
     return jsonify(health_data.to_dict()), 201
 
 @health_data_bp.route('/<int:data_id>', methods=['PUT'])
-@jwt_required()
 def update_health_data(data_id):
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     health_data = HealthData.query.get(data_id)
     
     if not health_data:
@@ -82,9 +79,8 @@ def update_health_data(data_id):
     return jsonify(health_data.to_dict()), 200
 
 @health_data_bp.route('/<int:data_id>', methods=['DELETE'])
-@jwt_required()
 def delete_health_data(data_id):
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     health_data = HealthData.query.get(data_id)
     
     if not health_data:

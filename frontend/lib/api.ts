@@ -177,57 +177,11 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
     
+    // 401エラーのハンドリングを無効化（ログイン処理をパス）
     if (error.response?.status === 401) {
-      // ログイン/登録エンドポイントでの401エラーは、認証情報が間違っているだけなので
-      // ログアウト処理を実行しない
-      const url = error.config?.url || ''
-      const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register')
-      
-      if (isAuthEndpoint) {
-        // ログイン/登録エンドポイントでの401エラーは、そのまま返す（ログアウトしない）
-        console.log('401 error on auth endpoint, not logging out')
-        return Promise.reject(error)
-      }
-      
-      // その他のエンドポイントでの401エラーは、認証が無効になったのでログアウト処理を実行
-      // リダイレクトの重複を防ぐ（グローバルフラグを使用）
-      if (!isRedirecting && globalThis.window !== undefined) {
-        isRedirecting = true
-        
-        // 既存のタイムアウトをクリア
-        if (redirectTimeout) {
-          clearTimeout(redirectTimeout)
-        }
-        
-        // トークンと認証状態をクリア
-        try {
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('auth-storage')
-        } catch (e) {
-          console.warn('Failed to clear localStorage:', e)
-        }
-        
-        // Zustandの状態もクリア
-        try {
-          const { useAuthStore } = require('@/store/authStore')
-          useAuthStore.getState().logout()
-        } catch (e) {
-          console.warn('Failed to clear auth store:', e)
-        }
-        
-        // リダイレクト（少し待ってから実行、重複を防ぐ）
-        redirectTimeout = setTimeout(() => {
-          if (globalThis.window.location.pathname !== '/') {
-            console.log('Redirecting to login due to 401 error')
-            globalThis.window.location.href = '/'
-          }
-          // リダイレクトフラグをリセット（10秒後、十分な時間を確保）
-          setTimeout(() => {
-            isRedirecting = false
-            redirectTimeout = null
-          }, 10000)
-        }, 200)
-      }
+      console.log('401 error detected, but authentication is bypassed')
+      // エラーをそのまま返す（リダイレクトしない）
+      return Promise.reject(error)
     }
     return Promise.reject(error)
   }

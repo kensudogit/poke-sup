@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token
 from extensions import db
 from models import User, UserRole
 from datetime import datetime
 from utils.logging import log_info, log_error, log_warn
+from utils import get_default_user_id
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -110,9 +111,8 @@ def login():
         return jsonify({'error': error_message}), 500
 
 @auth_bp.route('/me', methods=['GET'])
-@jwt_required()
 def get_current_user():
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     user = User.query.get(user_id)
     
     if not user:
@@ -122,9 +122,8 @@ def get_current_user():
     return jsonify(user.to_dict()), 200
 
 @auth_bp.route('/update-profile', methods=['PUT'])
-@jwt_required()
 def update_profile():
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     user = User.query.get(user_id)
     
     if not user:

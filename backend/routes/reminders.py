@@ -1,17 +1,16 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models import Reminder, User
 from datetime import datetime
 from utils.logging import log_info, log_error, log_warn
+from utils import get_default_user_id
 
 reminders_bp = Blueprint('reminders', __name__)
 
 @reminders_bp.route('', methods=['GET'])
-@jwt_required()
 def get_reminders():
     try:
-        user_id = get_jwt_identity()
+        user_id = get_default_user_id()
         is_completed = request.args.get('is_completed')
         upcoming_only = request.args.get('upcoming_only', 'false')
         
@@ -47,9 +46,8 @@ def get_reminders():
         return jsonify({'error': 'Failed to retrieve reminders', 'details': str(e)}), 500
 
 @reminders_bp.route('', methods=['POST'])
-@jwt_required()
 def create_reminder():
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     data = request.get_json()
     
     required_fields = ['title', 'scheduled_at']
@@ -73,9 +71,8 @@ def create_reminder():
     return jsonify(reminder.to_dict()), 201
 
 @reminders_bp.route('/<int:reminder_id>', methods=['PUT'])
-@jwt_required()
 def update_reminder(reminder_id):
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     reminder = Reminder.query.get(reminder_id)
     
     if not reminder:
@@ -108,9 +105,8 @@ def update_reminder(reminder_id):
     return jsonify(reminder.to_dict()), 200
 
 @reminders_bp.route('/<int:reminder_id>', methods=['DELETE'])
-@jwt_required()
 def delete_reminder(reminder_id):
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     reminder = Reminder.query.get(reminder_id)
     
     if not reminder:
@@ -125,9 +121,8 @@ def delete_reminder(reminder_id):
     return jsonify({'message': 'Reminder deleted'}), 200
 
 @reminders_bp.route('/<int:reminder_id>/complete', methods=['PUT'])
-@jwt_required()
 def complete_reminder(reminder_id):
-    user_id = get_jwt_identity()
+    user_id = get_default_user_id()
     reminder = Reminder.query.get(reminder_id)
     
     if not reminder:
